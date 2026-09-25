@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserProfile, WatchHistoryItem, Movie } from '../types/movie';
 import { User, Shield, Film, Clock, Heart, Sparkles, Check, Trash2, ArrowRight } from 'lucide-react';
+import { updateProfileUniversal, clearHistoryUniversal } from '../services/apiService';
 
 interface ProfilePageProps {
   user: UserProfile;
@@ -39,11 +40,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
     setSaving(true);
     try {
-      await fetch('/api/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ favoriteGenres: nextGenres })
-      });
+      await updateProfileUniversal({ favoriteGenres: nextGenres });
       if (onUpdateProfile) {
         onUpdateProfile({ favoriteGenres: nextGenres });
       }
@@ -57,7 +54,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const handleClearHistory = async () => {
     if (!confirm('Are you sure you want to clear your entire watch history?')) return;
     try {
-      await fetch('/api/history', { method: 'DELETE' });
+      await clearHistoryUniversal();
       if (onClearHistory) onClearHistory();
     } catch {
       // ignore

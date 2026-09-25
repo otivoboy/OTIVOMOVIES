@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Movie } from '../types/movie';
 import { Search, X, Film, Tv, User, Filter, SlidersHorizontal } from 'lucide-react';
+import { searchUniversal } from '../services/apiService';
 
 interface SearchModalProps {
+  allMovies?: Movie[];
   onClose: () => void;
   onSelectMovie: (movie: Movie) => void;
   onSelectPerson: (personId: string) => void;
@@ -10,6 +12,7 @@ interface SearchModalProps {
 }
 
 export const SearchModal: React.FC<SearchModalProps> = ({
+  allMovies = [],
   onClose,
   onSelectMovie,
   onSelectPerson,
@@ -31,19 +34,20 @@ export const SearchModal: React.FC<SearchModalProps> = ({
       return;
     }
 
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       setLoading(true);
-      fetch(`/api/search?q=${encodeURIComponent(query)}`)
-        .then(res => res.json())
-        .then(data => {
-          setResults(data);
-        })
-        .catch(() => {})
-        .finally(() => setLoading(false));
-    }, 250);
+      try {
+        const data = await searchUniversal(query, allMovies);
+        setResults(data);
+      } catch (err) {
+        console.error('Search failed:', err);
+      } finally {
+        setLoading(false);
+      }
+    }, 200);
 
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, allMovies]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-20 px-4 bg-black/80 backdrop-blur-md">

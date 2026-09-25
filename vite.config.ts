@@ -1,11 +1,23 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
+import {defineConfig, loadEnv} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
 
-export default defineConfig(() => {
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const tmdbKey = env.VITE_TMDB_API_KEY || env.TMDB_API_KEY || process.env.VITE_TMDB_API_KEY || process.env.TMDB_API_KEY || '';
+  const watchmodeKey = env.VITE_WATCHMODE_API_KEY || env.WATCHMODE_API_KEY || process.env.VITE_WATCHMODE_API_KEY || process.env.WATCHMODE_API_KEY || '';
+  const adminEmail = env.ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'otivoai@gmail.com';
+
   return {
+    define: {
+      'process.env.TMDB_API_KEY': JSON.stringify(tmdbKey),
+      'process.env.VITE_TMDB_API_KEY': JSON.stringify(tmdbKey),
+      'process.env.WATCHMODE_API_KEY': JSON.stringify(watchmodeKey),
+      'process.env.VITE_WATCHMODE_API_KEY': JSON.stringify(watchmodeKey),
+      'process.env.ADMIN_EMAIL': JSON.stringify(adminEmail),
+    },
     plugins: [
       react(),
       tailwindcss(),

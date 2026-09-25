@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Movie, WatchHistoryItem, UserProfile } from './types/movie';
+import {
+  fetchMoviesUniversal,
+  fetchHistoryUniversal,
+  fetchWatchlistUniversal,
+  toggleWatchlistUniversal,
+  fetchProfileUniversal,
+  saveHistoryItemUniversal,
+  getAdminEmail
+} from './services/apiService';
 import { Navbar } from './components/Navbar';
 import { MobileNav } from './components/MobileNav';
 import { OfflineIndicator } from './components/OfflineIndicator';
@@ -35,9 +44,9 @@ export default function App() {
   const [watchlistIds, setWatchlistIds] = useState<string[]>([]);
   const [historyItems, setHistoryItems] = useState<(WatchHistoryItem & { movie?: Movie })[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile>({
-    id: 'user-demo',
+    id: 'user-admin',
     name: 'OTIVO Admin',
-    email: 'otivoai@gmail.com',
+    email: getAdminEmail(),
     avatar: '',
     favoriteGenres: ['Sci-Fi', 'Action', 'Drama'],
     watchlist: [],
@@ -45,43 +54,40 @@ export default function App() {
     ratings: {}
   });
 
-  const fetchMovies = useCallback(() => {
-    fetch('/api/movies')
-      .then(res => res.json())
+  const fetchMovies = useCallback((forceRefresh = false) => {
+    setLoading(true);
+    fetchMoviesUniversal(forceRefresh)
       .then(data => {
-        if (Array.isArray(data)) setMovies(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setMovies(data);
+        }
       })
-      .catch(err => console.error(err))
+      .catch(err => console.error('Error fetching movies:', err))
       .finally(() => setLoading(false));
   }, []);
 
   const fetchHistory = useCallback(() => {
-    fetch('/api/history')
-      .then(res => res.json())
+    fetchHistoryUniversal()
       .then(data => {
         if (Array.isArray(data)) setHistoryItems(data);
       })
-      .catch(err => console.error(err));
+      .catch(err => console.error('Error fetching history:', err));
   }, []);
 
   const fetchWatchlist = useCallback(() => {
-    fetch('/api/watchlist')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setWatchlistIds(data.map((m: any) => m.id));
-        }
+    fetchWatchlistUniversal()
+      .then(ids => {
+        if (Array.isArray(ids)) setWatchlistIds(ids);
       })
       .catch(() => {});
   }, []);
 
   const fetchProfile = useCallback(() => {
-    fetch('/api/profile')
-      .then(res => res.json())
+    fetchProfileUniversal()
       .then(data => {
         if (data && data.email) {
           setUserProfile(data);
-          if (Array.isArray(data.watchlist)) {
+          if (Array.isArray(data.watchlist) && data.watchlist.length > 0) {
             setWatchlistIds(data.watchlist);
           }
         }
@@ -96,35 +102,16 @@ export default function App() {
     fetchProfile();
   }, [fetchMovies, fetchHistory, fetchWatchlist, fetchProfile]);
 
-  const handleToggleWatchlist = (movieId: string, e: React.MouseEvent) => {
+  const handleToggleWatchlist = async (movieId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (watchlistIds.includes(movieId)) {
-      setWatchlistIds(prev => prev.filter(id => id !== movieId));
-      fetch(`/api/watchlist/${movieId}`, { method: 'DELETE' }).catch(() => {});
-    } else {
-      setWatchlistIds(prev => [...prev, movieId]);
-      fetch('/api/watchlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ movieId })
-      }).catch(() => {});
-    }
+    const updated = await toggleWatchlistUniversal(movieId);
+    setWatchlistIds(updated);
   };
 
-  const handleUpdateHistory = useCallback((position: number, duration: number, completed: boolean) => {
+  const handleUpdateHistory = useCallback(async (position: number, duration: number, completed: boolean) => {
     if (!playingMovie) return;
-    fetch('/api/history', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        movieId: playingMovie.movie.id,
-        position,
-        duration,
-        completed
-      })
-    })
-      .then(() => fetchHistory())
-      .catch(() => {});
+    await saveHistoryItemUniversal(playingMovie.movie.id, position, duration);
+    fetchHistory();
   }, [playingMovie, fetchHistory]);
 
   const handleNavigate = (tab: string, extra?: any) => {
@@ -297,6 +284,7 @@ export default function App() {
       {/* Search Modal */}
       {searchModalOpen && (
         <SearchModal
+          allMovies={movies}
           onClose={() => setSearchModalOpen(false)}
           onSelectMovie={setSelectedMovie}
           onSelectPerson={(personId) => handleNavigate('person', { personId })}

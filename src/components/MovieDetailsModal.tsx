@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Movie, Comment } from '../types/movie';
 import { X, Play, Plus, Check, Star, ShieldCheck, Film, ExternalLink, MessageSquare, Send, Sparkles } from 'lucide-react';
+import { fetchCommentsUniversal, addCommentUniversal } from '../services/apiService';
 
 interface MovieDetailsModalProps {
   movie: Movie;
@@ -40,11 +41,8 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
 
   useEffect(() => {
     // Fetch comments for this movie
-    fetch(`/api/comments?movieId=${movie.id}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setComments(data);
-      })
+    fetchCommentsUniversal(movie.id)
+      .then(data => setComments(data))
       .catch(() => {});
   }, [movie.id]);
 
@@ -54,20 +52,9 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
 
     setSubmittingComment(true);
     try {
-      const res = await fetch('/api/comments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          movieId: movie.id,
-          text: newCommentText,
-          rating: userRating
-        })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setComments([data, ...comments]);
-        setNewCommentText('');
-      }
+      const newComment = await addCommentUniversal(movie.id, newCommentText, userRating);
+      setComments(prev => [newComment, ...prev]);
+      setNewCommentText('');
     } catch (err) {
       console.error(err);
     } finally {
