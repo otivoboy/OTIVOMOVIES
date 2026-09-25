@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
-import { Movie, getMovieStreamingAction } from '../types/movie';
+import { Movie } from '../types/movie';
 import {
   Play,
   Plus,
   Check,
   Share2,
   Star,
-  ExternalLink,
   ShieldCheck,
   Sparkles,
   Film,
-  Tv,
-  Globe
+  Globe,
+  Radio,
+  Layers,
+  CheckCircle2
 } from 'lucide-react';
 
 interface MovieSpotlightProps {
@@ -33,11 +34,8 @@ export const MovieSpotlight: React.FC<MovieSpotlightProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'cast' | 'crew' | 'similar' | 'reviews'>('overview');
   const [copiedShare, setCopiedShare] = useState(false);
-  const [selectedRegion, setSelectedRegion] = useState('🇰🇪 (Kenya)');
 
   const inWatchlist = watchlistIds.includes(movie.id);
-  const action = getMovieStreamingAction(movie);
-  const hasFreeStream = movie.isFree || movie.streamingSources.some(s => s.isFree && s.isAuthorized !== false);
 
   const formatRuntime = (mins: number) => {
     const hours = Math.floor(mins / 60);
@@ -64,10 +62,10 @@ export const MovieSpotlight: React.FC<MovieSpotlightProps> = ({
     .slice(0, 5);
 
   return (
-    <section className="p-4 sm:p-6 lg:p-8 rounded-3xl bg-[#0b101b] border border-slate-800/80 shadow-2xl relative overflow-hidden">
+    <section className="p-4 sm:p-6 lg:p-8 rounded-3xl bg-[#0B1118] border border-slate-800/80 shadow-2xl relative overflow-hidden">
       {/* Subtle backdrop glow */}
       <div
-        className="absolute -top-40 -left-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"
+        className="absolute -top-40 -left-40 w-96 h-96 bg-[#00F060]/10 rounded-full blur-3xl pointer-events-none"
       />
       <div
         className="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"
@@ -82,18 +80,16 @@ export const MovieSpotlight: React.FC<MovieSpotlightProps> = ({
               alt={movie.title}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
-            {hasFreeStream && (
-              <div className="absolute top-3 left-3 px-2 py-1 rounded-md bg-[#00E575] text-[#081018] font-black text-[11px] uppercase tracking-wider shadow-md">
-                HD FREE
-              </div>
-            )}
+            <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-[#00F060] text-black font-black text-[10px] uppercase tracking-wider shadow-md">
+              OTIVO 1080P
+            </div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
               <button
                 onClick={() => onPlayMovie(movie)}
-                className="w-full py-2.5 rounded-xl bg-[#00E575] text-[#081018] font-bold text-xs flex items-center justify-center gap-2 shadow-lg"
+                className="w-full py-2.5 rounded-xl bg-[#00F060] text-black font-bold text-xs flex items-center justify-center gap-2 shadow-lg"
               >
-                <Play className="w-4 h-4 fill-[#081018]" />
-                <span>{action.label}</span>
+                <Play className="w-4 h-4 fill-black" />
+                <span>Play Movie</span>
               </button>
             </div>
           </div>
@@ -119,7 +115,7 @@ export const MovieSpotlight: React.FC<MovieSpotlightProps> = ({
               <span>{movie.genres.join(' • ')}</span>
             </div>
 
-            {/* Ratings Row (Matching user screenshot) */}
+            {/* Ratings Row */}
             <div className="flex items-center gap-4 pt-1">
               <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs">
                 <Star className="w-4 h-4 fill-amber-400" />
@@ -130,8 +126,8 @@ export const MovieSpotlight: React.FC<MovieSpotlightProps> = ({
                 </span>
               </div>
 
-              <div className="flex items-center gap-1.5 text-[#00E575] font-bold text-xs">
-                <div className="w-4 h-4 rounded-full bg-[#00E575]/20 flex items-center justify-center text-[10px]">
+              <div className="flex items-center gap-1.5 text-[#00F060] font-bold text-xs">
+                <div className="w-4 h-4 rounded-full bg-[#00F060]/20 flex items-center justify-center text-[10px]">
                   ✓
                 </div>
                 <span>92%</span>
@@ -145,41 +141,21 @@ export const MovieSpotlight: React.FC<MovieSpotlightProps> = ({
             {movie.overview}
           </p>
 
-          {/* Distinct Action Buttons (Matching user screenshot) */}
+          {/* Action Buttons */}
           <div className="flex items-center flex-wrap gap-3 pt-1">
-            {action.type === 'STREAM' ? (
-              <button
-                onClick={() => onPlayMovie(movie)}
-                className="px-6 py-3 rounded-2xl bg-[#00E575] hover:bg-[#00c965] text-[#081018] font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-[#00E575]/25 transition hover:scale-[1.02]"
-              >
-                <Play className="w-4 h-4 fill-[#081018]" />
-                <span>Watch Free</span>
-              </button>
-            ) : action.type === 'PROVIDER' ? (
-              <a
-                href={action.providerUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-6 py-3 rounded-2xl bg-blue-500 hover:bg-blue-400 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-blue-500/25 transition hover:scale-[1.02]"
-              >
-                <Play className="w-4 h-4 fill-white" />
-                <span>{action.label}</span>
-              </a>
-            ) : (
-              <button
-                onClick={() => onPlayMovie(movie)}
-                className="px-6 py-3 rounded-2xl bg-[#00E575] hover:bg-[#00c965] text-[#081018] font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-[#00E575]/25 transition hover:scale-[1.02]"
-              >
-                <Play className="w-4 h-4 fill-[#081018]" />
-                <span>Watch Trailer</span>
-              </button>
-            )}
+            <button
+              onClick={() => onPlayMovie(movie)}
+              className="px-6 py-3 rounded-2xl bg-[#00F060] hover:bg-[#16FF72] text-black font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-[#00F060]/25 transition hover:scale-[1.02]"
+            >
+              <Play className="w-4 h-4 fill-black ml-0.5" />
+              <span>Watch Movie</span>
+            </button>
 
             <button
               onClick={e => onToggleWatchlist(movie.id, e)}
               className="px-4 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-white border border-slate-800 font-bold text-xs flex items-center gap-2 transition"
             >
-              {inWatchlist ? <Check className="w-4 h-4 text-[#00E575]" /> : <Plus className="w-4 h-4" />}
+              {inWatchlist ? <Check className="w-4 h-4 text-[#00F060]" /> : <Plus className="w-4 h-4" />}
               <span>{inWatchlist ? 'In My List' : 'Add to My List'}</span>
             </button>
 
@@ -206,12 +182,12 @@ export const MovieSpotlight: React.FC<MovieSpotlightProps> = ({
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`pb-1 px-1 transition-colors relative whitespace-nowrap ${
-                    activeTab === tab.id ? 'text-[#00E575] font-bold' : 'text-slate-400 hover:text-white'
+                    activeTab === tab.id ? 'text-[#00F060] font-bold' : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   <span>{tab.label}</span>
                   {activeTab === tab.id && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00E575] rounded-full" />
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00F060] rounded-full" />
                   )}
                 </button>
               ))}
@@ -221,7 +197,7 @@ export const MovieSpotlight: React.FC<MovieSpotlightProps> = ({
             <div className="pt-3 text-xs text-slate-300">
               {activeTab === 'overview' && (
                 <p className="text-slate-400 leading-relaxed">
-                  Released by Warner Bros. Pictures & Legendary Entertainment. Directed by Denis Villeneuve with cinematography by Greig Fraser and musical score composed by Hans Zimmer.
+                  Available in full high-definition 1080p surround sound on OTIVO Movies. Direct streaming connected to edge servers.
                 </p>
               )}
 
@@ -285,90 +261,72 @@ export const MovieSpotlight: React.FC<MovieSpotlightProps> = ({
           </div>
         </div>
 
-        {/* Right Column: "Where to Watch" Panel (4 cols) (Matching user screenshot) */}
-        <div className="lg:col-span-4 p-5 rounded-2xl bg-slate-900/70 border border-slate-800/90 space-y-4 shadow-xl">
+        {/* Right Column: OTIVO Movie Streaming Engine Specs (4 cols) */}
+        <div className="lg:col-span-4 p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4 shadow-xl">
           <div className="space-y-1">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-              Where to Watch
-            </h3>
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span>Available in your region {selectedRegion}</span>
-              <button
-                onClick={() => {
-                  const regions = ['🇰🇪 (Kenya)', '🇺🇸 (United States)', '🇬🇧 (United Kingdom)', '🌍 (Global)'];
-                  const nextIdx = (regions.indexOf(selectedRegion) + 1) % regions.length;
-                  setSelectedRegion(regions[nextIdx]);
-                }}
-                className="text-[10px] text-[#00E575] hover:underline"
-                title="Change region"
-              >
-                Change
-              </button>
+            <div className="flex items-center gap-2">
+              <Radio className="w-4 h-4 text-[#00F060] animate-pulse" />
+              <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
+                OTIVO Streaming Engine
+              </h3>
             </div>
+            <p className="text-xs text-slate-400">Direct connection to high-speed CDN servers</p>
           </div>
 
-          {/* Highlighted OTIVO Free Streaming Card (Matching screenshot) */}
-          <div className="p-3.5 rounded-xl bg-gradient-to-r from-emerald-950/60 to-slate-900 border border-[#00E575]/40 flex items-center justify-between gap-3 shadow-lg">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#00E575]/20 text-[#00E575] flex items-center justify-center font-bold text-xs">
-                Free
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/60 to-slate-900 border border-[#00F060]/40 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-white">Master Quality</span>
+              <span className="px-2 py-0.5 rounded bg-[#00F060] text-black font-extrabold text-[10px]">
+                1080p Ultra HD
+              </span>
+            </div>
+
+            <div className="space-y-1.5 text-xs text-slate-300 font-mono">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Protocol:</span>
+                <span className="text-[#00F060]">HLS Adaptive (.m3u8)</span>
               </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold text-white">Free on</span>
-                  <span className="text-xs font-black text-[#00E575]">OTIVO</span>
-                  <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-[#00E575] text-[9px] font-bold">HD</span>
-                </div>
-                <span className="text-[10px] text-slate-400">Authorized Stream</span>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Audio:</span>
+                <span>5.1 Surround Sound</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Latency:</span>
+                <span className="text-emerald-400">&lt; 14ms Edge CDN</span>
               </div>
             </div>
 
             <button
               onClick={() => onPlayMovie(movie)}
-              className="px-3.5 py-1.5 rounded-xl bg-[#00E575] hover:bg-[#00c965] text-[#081018] font-bold text-xs flex items-center gap-1.5 shadow-md shadow-[#00E575]/20 transition"
+              className="w-full py-3 rounded-xl bg-[#00F060] hover:bg-[#16FF72] text-black font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#00F060]/20 transition"
             >
-              <Play className="w-3 h-3 fill-[#081018]" />
-              <span>Watch Free</span>
+              <Play className="w-4 h-4 fill-black ml-0.5" />
+              <span>Start Streaming Now</span>
             </button>
           </div>
 
-          {/* "Also Available On" List (Matching screenshot) */}
-          <div className="space-y-2 pt-1">
+          <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2 text-xs">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-              Also Available On
+              Supported Playback Features
             </span>
-
-            {[
-              { name: 'Netflix', type: 'Subscription', color: 'bg-red-500', url: 'https://www.netflix.com' },
-              { name: 'Prime Video', type: 'Subscription', color: 'bg-blue-600', url: 'https://www.primevideo.com' },
-              { name: 'Disney+', type: 'Subscription', color: 'bg-indigo-600', url: 'https://www.disneyplus.com' },
-              { name: 'Apple TV+', type: 'Subscription', color: 'bg-zinc-700', url: 'https://tv.apple.com' }
-            ].map(provider => (
-              <div
-                key={provider.name}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/60 hover:border-slate-700 transition"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className={`w-6 h-6 rounded-md ${provider.color} flex items-center justify-center text-white text-[10px] font-bold shadow-sm`}>
-                    {provider.name.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-white">{provider.name}</p>
-                    <p className="text-[10px] text-slate-400">{provider.type}</p>
-                  </div>
-                </div>
-
-                <a
-                  href={provider.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium text-[11px] transition flex items-center gap-1"
-                >
-                  <span>Watch Now</span>
-                  <ExternalLink className="w-2.5 h-2.5 text-slate-400" />
-                </a>
+            <div className="grid grid-cols-2 gap-2 text-slate-300 text-[11px]">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#00F060]" />
+                <span>Multi-bitrate</span>
               </div>
-            ))}
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#00F060]" />
+                <span>Resume Progress</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#00F060]" />
+                <span>Variable Speed</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#00F060]" />
+                <span>Full Mobile View</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

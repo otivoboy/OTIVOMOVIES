@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Movie, WatchHistoryItem, UserProfile } from './types/movie';
+import { Movie, WatchHistoryItem } from './types/movie';
 import {
   fetchMoviesUniversal,
   fetchHistoryUniversal,
   fetchWatchlistUniversal,
   toggleWatchlistUniversal,
-  fetchProfileUniversal,
-  saveHistoryItemUniversal,
-  getAdminEmail
+  saveHistoryItemUniversal
 } from './services/apiService';
-import { Navbar } from './components/Navbar';
+import { Sidebar } from './components/Sidebar';
+import { TopHeader } from './components/TopHeader';
 import { MobileNav } from './components/MobileNav';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { SEOHead } from './components/SEOHead';
@@ -24,7 +23,6 @@ import { GenresPage } from './pages/GenresPage';
 import { UpcomingPage } from './pages/UpcomingPage';
 import { FreeToWatchPage } from './pages/FreeToWatchPage';
 import { WatchlistPage } from './pages/WatchlistPage';
-import { ProfilePage } from './pages/ProfilePage';
 import { AdminPage } from './pages/AdminPage';
 import { PersonPage } from './pages/PersonPage';
 
@@ -32,6 +30,7 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<string>('home');
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Modals state
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
@@ -40,19 +39,9 @@ export default function App() {
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
 
-  // User & Watchlist State
+  // Watchlist & History State
   const [watchlistIds, setWatchlistIds] = useState<string[]>([]);
   const [historyItems, setHistoryItems] = useState<(WatchHistoryItem & { movie?: Movie })[]>([]);
-  const [userProfile, setUserProfile] = useState<UserProfile>({
-    id: 'user-admin',
-    name: 'OTIVO Admin',
-    email: getAdminEmail(),
-    avatar: '',
-    favoriteGenres: ['Sci-Fi', 'Action', 'Drama'],
-    watchlist: [],
-    history: [],
-    ratings: {}
-  });
 
   const fetchMovies = useCallback((forceRefresh = false) => {
     setLoading(true);
@@ -82,25 +71,11 @@ export default function App() {
       .catch(() => {});
   }, []);
 
-  const fetchProfile = useCallback(() => {
-    fetchProfileUniversal()
-      .then(data => {
-        if (data && data.email) {
-          setUserProfile(data);
-          if (Array.isArray(data.watchlist) && data.watchlist.length > 0) {
-            setWatchlistIds(data.watchlist);
-          }
-        }
-      })
-      .catch(() => {});
-  }, []);
-
   useEffect(() => {
     fetchMovies();
     fetchHistory();
     fetchWatchlist();
-    fetchProfile();
-  }, [fetchMovies, fetchHistory, fetchWatchlist, fetchProfile]);
+  }, [fetchMovies, fetchHistory, fetchWatchlist]);
 
   const handleToggleWatchlist = async (movieId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -122,155 +97,143 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="min-h-screen bg-[#05090D] text-slate-100 flex flex-col selection:bg-[#00F060]/30 selection:text-[#00F060]">
       <SEOHead title={selectedMovie?.title} movie={selectedMovie || undefined} />
 
-      {/* Top Navbar */}
-      <Navbar
+      {/* Fixed Left Sidebar for Desktop & Mobile Overlay Drawer */}
+      <Sidebar
         currentTab={currentTab}
         watchlistCount={watchlistIds.length}
+        isOpenMobile={mobileSidebarOpen}
+        onCloseMobile={() => setMobileSidebarOpen(false)}
         onNavigate={handleNavigate}
-        onOpenSearch={() => setSearchModalOpen(true)}
       />
 
-      {/* Main Page View Router */}
-      <main className="flex-1">
-        {loading ? (
-          <div className="h-screen flex items-center justify-center text-slate-500 font-mono text-xs animate-pulse">
-            Loading OTIVO Movies Catalog...
-          </div>
-        ) : (
-          <>
-            {currentTab === 'home' && (
-              <HomePage
-                movies={movies}
-                watchlistIds={watchlistIds}
-                historyItems={historyItems}
-                onSelectMovie={setSelectedMovie}
-                onPlayMovie={(movie, resumePos) => setPlayingMovie({ movie, resumePosition: resumePos })}
-                onToggleWatchlist={handleToggleWatchlist}
-              />
-            )}
-
-            {currentTab === 'movies' && (
-              <MoviesPage
-                movies={movies}
-                watchlistIds={watchlistIds}
-                onSelectMovie={setSelectedMovie}
-                onPlayMovie={(movie) => setPlayingMovie({ movie })}
-                onToggleWatchlist={handleToggleWatchlist}
-              />
-            )}
-
-            {currentTab === 'tv' && (
-              <TvShowsPage
-                movies={movies}
-                watchlistIds={watchlistIds}
-                onSelectMovie={setSelectedMovie}
-                onPlayMovie={(movie) => setPlayingMovie({ movie })}
-                onToggleWatchlist={handleToggleWatchlist}
-              />
-            )}
-
-            {currentTab === 'genres' && (
-              <GenresPage
-                movies={movies}
-                watchlistIds={watchlistIds}
-                initialGenre={selectedGenre || undefined}
-                onSelectMovie={setSelectedMovie}
-                onPlayMovie={(movie) => setPlayingMovie({ movie })}
-                onToggleWatchlist={handleToggleWatchlist}
-              />
-            )}
-
-            {currentTab === 'upcoming' && (
-              <UpcomingPage
-                movies={movies}
-                watchlistIds={watchlistIds}
-                onSelectMovie={setSelectedMovie}
-                onPlayMovie={(movie) => setPlayingMovie({ movie })}
-                onToggleWatchlist={handleToggleWatchlist}
-              />
-            )}
-
-            {currentTab === 'free' && (
-              <FreeToWatchPage
-                movies={movies}
-                watchlistIds={watchlistIds}
-                onSelectMovie={setSelectedMovie}
-                onPlayMovie={(movie) => setPlayingMovie({ movie })}
-                onToggleWatchlist={handleToggleWatchlist}
-              />
-            )}
-
-            {currentTab === 'watchlist' && (
-              <WatchlistPage
-                movies={movies}
-                watchlistIds={watchlistIds}
-                onSelectMovie={setSelectedMovie}
-                onPlayMovie={(movie) => setPlayingMovie({ movie })}
-                onToggleWatchlist={handleToggleWatchlist}
-              />
-            )}
-
-            {currentTab === 'person' && selectedPersonId && (
-              <PersonPage
-                personId={selectedPersonId}
-                movies={movies}
-                watchlistIds={watchlistIds}
-                onSelectMovie={setSelectedMovie}
-                onPlayMovie={(movie) => setPlayingMovie({ movie })}
-                onToggleWatchlist={handleToggleWatchlist}
-              />
-            )}
-
-            {currentTab === 'profile' && (
-              <ProfilePage
-                user={userProfile}
-                historyItems={historyItems}
-                movies={movies}
-                watchlistCount={watchlistIds.length}
-                onPlayMovie={(movie, pos) => setPlayingMovie({ movie, resumePosition: pos })}
-                onNavigate={handleNavigate}
-                onClearHistory={() => setHistoryItems([])}
-                onUpdateProfile={(updated) => setUserProfile(prev => ({ ...prev, ...updated }))}
-              />
-            )}
-
-            {currentTab === 'admin' && (
-              <AdminPage movies={movies} onRefreshMovies={fetchMovies} />
-            )}
-          </>
-        )}
-      </main>
-
-      {/* Mobile Bottom Navigation Bar */}
-      <MobileNav
-        currentTab={currentTab}
-        onNavigate={handleNavigate}
-        onOpenSearch={() => setSearchModalOpen(true)}
-      />
-
-      {/* Video Player Modal */}
-      {playingMovie && (
-        <VideoPlayerModal
-          movie={playingMovie.movie}
-          initialPosition={playingMovie.resumePosition}
-          onClose={() => setPlayingMovie(null)}
-          onUpdateHistory={handleUpdateHistory}
+      {/* Main Content Area Container (Padded left on desktop for fixed sidebar) */}
+      <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
+        {/* Sticky Top Header */}
+        <TopHeader
+          onOpenSearch={() => setSearchModalOpen(true)}
+          onOpenMobileMenu={() => setMobileSidebarOpen(true)}
+          onNavigate={handleNavigate}
         />
-      )}
 
-      {/* Movie Details Modal */}
+        {/* Main View Router */}
+        <main className="flex-1 min-w-0">
+          {loading ? (
+            <div className="h-[80vh] flex items-center justify-center text-slate-500 font-mono text-xs animate-pulse">
+              Loading OTIVO Movies Catalog...
+            </div>
+          ) : (
+            <>
+              {currentTab === 'home' && (
+                <HomePage
+                  movies={movies}
+                  watchlistIds={watchlistIds}
+                  historyItems={historyItems}
+                  onSelectMovie={setSelectedMovie}
+                  onPlayMovie={(movie, resumePos) => setPlayingMovie({ movie, resumePosition: resumePos })}
+                  onToggleWatchlist={handleToggleWatchlist}
+                />
+              )}
+
+              {currentTab === 'movies' && (
+                <MoviesPage
+                  movies={movies}
+                  watchlistIds={watchlistIds}
+                  onSelectMovie={setSelectedMovie}
+                  onPlayMovie={(movie) => setPlayingMovie({ movie })}
+                  onToggleWatchlist={handleToggleWatchlist}
+                />
+              )}
+
+              {currentTab === 'tv' && (
+                <TvShowsPage
+                  movies={movies}
+                  watchlistIds={watchlistIds}
+                  onSelectMovie={setSelectedMovie}
+                  onPlayMovie={(movie) => setPlayingMovie({ movie })}
+                  onToggleWatchlist={handleToggleWatchlist}
+                />
+              )}
+
+              {currentTab === 'genres' && (
+                <GenresPage
+                  movies={movies}
+                  watchlistIds={watchlistIds}
+                  initialGenre={selectedGenre || undefined}
+                  onSelectMovie={setSelectedMovie}
+                  onPlayMovie={(movie) => setPlayingMovie({ movie })}
+                  onToggleWatchlist={handleToggleWatchlist}
+                />
+              )}
+
+              {currentTab === 'upcoming' && (
+                <UpcomingPage
+                  movies={movies}
+                  watchlistIds={watchlistIds}
+                  onSelectMovie={setSelectedMovie}
+                  onPlayMovie={(movie) => setPlayingMovie({ movie })}
+                  onToggleWatchlist={handleToggleWatchlist}
+                />
+              )}
+
+              {currentTab === 'free' && (
+                <FreeToWatchPage
+                  movies={movies}
+                  watchlistIds={watchlistIds}
+                  onSelectMovie={setSelectedMovie}
+                  onPlayMovie={(movie) => setPlayingMovie({ movie })}
+                  onToggleWatchlist={handleToggleWatchlist}
+                />
+              )}
+
+              {currentTab === 'watchlist' && (
+                <WatchlistPage
+                  movies={movies}
+                  watchlistIds={watchlistIds}
+                  onSelectMovie={setSelectedMovie}
+                  onPlayMovie={(movie) => setPlayingMovie({ movie })}
+                  onToggleWatchlist={handleToggleWatchlist}
+                />
+              )}
+
+              {currentTab === 'person' && selectedPersonId && (
+                <PersonPage
+                  personId={selectedPersonId}
+                  movies={movies}
+                  watchlistIds={watchlistIds}
+                  onSelectMovie={setSelectedMovie}
+                  onPlayMovie={(movie) => setPlayingMovie({ movie })}
+                  onToggleWatchlist={handleToggleWatchlist}
+                />
+              )}
+
+              {currentTab === 'admin' && (
+                <AdminPage movies={movies} onRefreshMovies={fetchMovies} />
+              )}
+            </>
+          )}
+        </main>
+
+        {/* Mobile Bottom Navigation Bar */}
+        <MobileNav
+          currentTab={currentTab}
+          onNavigate={handleNavigate}
+          onOpenSearch={() => setSearchModalOpen(true)}
+        />
+      </div>
+
+      {/* Global Modals */}
       {selectedMovie && (
         <MovieDetailsModal
           movie={selectedMovie}
           allMovies={movies}
           watchlistIds={watchlistIds}
           onClose={() => setSelectedMovie(null)}
-          onPlay={(m) => {
+          onPlay={(movie) => {
             setSelectedMovie(null);
-            setPlayingMovie({ movie: m });
+            setPlayingMovie({ movie });
           }}
           onToggleWatchlist={handleToggleWatchlist}
           onSelectMovie={setSelectedMovie}
@@ -281,18 +244,34 @@ export default function App() {
         />
       )}
 
-      {/* Search Modal */}
+      {playingMovie && (
+        <VideoPlayerModal
+          movie={playingMovie.movie}
+          initialPosition={playingMovie.resumePosition || 0}
+          onClose={() => setPlayingMovie(null)}
+          onUpdateHistory={handleUpdateHistory}
+        />
+      )}
+
       {searchModalOpen && (
         <SearchModal
           allMovies={movies}
           onClose={() => setSearchModalOpen(false)}
-          onSelectMovie={setSelectedMovie}
-          onSelectPerson={(personId) => handleNavigate('person', { personId })}
-          onSelectGenre={(genre) => handleNavigate('genres', { genre })}
+          onSelectMovie={(movie) => {
+            setSearchModalOpen(false);
+            setSelectedMovie(movie);
+          }}
+          onSelectPerson={(personId) => {
+            setSearchModalOpen(false);
+            handleNavigate('person', { personId });
+          }}
+          onSelectGenre={(genre) => {
+            setSearchModalOpen(false);
+            handleNavigate('genres', { genre });
+          }}
         />
       )}
 
-      {/* Offline Status Toast */}
       <OfflineIndicator />
     </div>
   );

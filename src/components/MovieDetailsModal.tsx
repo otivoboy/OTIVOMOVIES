@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Movie, Comment } from '../types/movie';
-import { X, Play, Plus, Check, Star, ShieldCheck, Film, ExternalLink, MessageSquare, Send, Sparkles } from 'lucide-react';
+import { X, Play, Plus, Check, Star, ShieldCheck, Film, MessageSquare, Send, Sparkles } from 'lucide-react';
 import { fetchCommentsUniversal, addCommentUniversal } from '../services/apiService';
 
 interface MovieDetailsModalProps {
@@ -24,14 +24,13 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
   onSelectMovie,
   onSelectPerson
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'cast' | 'where' | 'comments'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'cast' | 'comments'>('overview');
   const [showTrailer, setShowTrailer] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newCommentText, setNewCommentText] = useState('');
   const [userRating, setUserRating] = useState<number>(9);
   const [submittingComment, setSubmittingComment] = useState(false);
 
-  const isFree = movie.isFree || movie.streamingSources.some(s => s.isFree);
   const isInWatchlist = watchlistIds.includes(movie.id);
 
   // Similar movies
@@ -40,7 +39,6 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
     .slice(0, 6);
 
   useEffect(() => {
-    // Fetch comments for this movie
     fetchCommentsUniversal(movie.id)
       .then(data => setComments(data))
       .catch(() => {});
@@ -63,12 +61,12 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/80 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-4xl rounded-3xl bg-[#0d121f] border border-slate-800 shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-md overflow-y-auto">
+      <div className="relative w-full max-w-5xl rounded-3xl bg-[#0B1118] border border-slate-800/90 shadow-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-black/60 text-slate-300 hover:text-white hover:bg-black transition backdrop-blur-md border border-white/10"
+          className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-black/70 text-slate-300 hover:text-white hover:bg-black transition backdrop-blur-md border border-white/10"
         >
           <X className="w-5 h-5" />
         </button>
@@ -80,8 +78,8 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
             alt={movie.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0d121f] via-[#0d121f]/50 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0d121f] via-[#0d121f]/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0B1118] via-[#0B1118]/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0B1118] via-[#0B1118]/40 to-transparent" />
 
           {/* Title & Key Info inside Banner */}
           <div className="absolute bottom-6 left-6 right-6 flex items-end gap-5">
@@ -90,13 +88,11 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
               alt={movie.title}
               className="hidden sm:block w-32 md:w-40 rounded-2xl border-2 border-slate-700/80 shadow-2xl flex-shrink-0 object-cover"
             />
-            <div className="space-y-2 max-w-2xl">
+            <div className="space-y-2 max-w-3xl">
               <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-slate-300">
-                {isFree && (
-                  <span className="px-2.5 py-0.5 rounded bg-emerald-500 text-slate-950 font-extrabold uppercase text-[10px] tracking-wider">
-                    Free Stream
-                  </span>
-                )}
+                <span className="px-2.5 py-0.5 rounded bg-[#00F060] text-black font-extrabold uppercase text-[10px] tracking-wider">
+                  OTIVO STREAM
+                </span>
                 <span className="flex items-center gap-1 text-amber-400 font-bold bg-black/60 px-2 py-0.5 rounded border border-white/10">
                   <Star className="w-3.5 h-3.5 fill-amber-400" />
                   <span>{movie.rating.toFixed(1)}</span>
@@ -119,41 +115,30 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
 
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center gap-3 pt-2">
-                {isFree ? (
-                  <button
-                    onClick={() => onPlay(movie)}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm shadow-xl shadow-emerald-500/20 transition"
-                  >
-                    <Play className="w-4 h-4 fill-slate-950 ml-0.5" />
-                    <span>Watch Free Now</span>
-                  </button>
-                ) : (
-                  <a
-                    href="#where-to-watch"
-                    onClick={() => setActiveTab('where')}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm border border-slate-700 transition"
-                  >
-                    <Film className="w-4 h-4 text-emerald-400" />
-                    <span>Where to Watch</span>
-                  </a>
-                )}
+                <button
+                  onClick={() => onPlay(movie)}
+                  className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#00F060] hover:bg-[#16FF72] text-black font-bold text-xs sm:text-sm shadow-xl shadow-[#00F060]/20 transition transform hover:scale-105"
+                >
+                  <Play className="w-4 h-4 fill-black ml-0.5" />
+                  <span>Watch Movie</span>
+                </button>
 
                 <button
                   onClick={(e) => onToggleWatchlist(movie.id, e)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition ${
+                  className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold transition ${
                     isInWatchlist
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                      ? 'bg-[#00F060]/20 text-[#00F060] border border-[#00F060]/40'
                       : 'bg-slate-900/80 hover:bg-slate-800 text-slate-200 border border-slate-700'
                   }`}
                 >
-                  {isInWatchlist ? <Check className="w-4 h-4 text-emerald-400" /> : <Plus className="w-4 h-4" />}
-                  <span>{isInWatchlist ? 'In Watchlist' : 'Watchlist'}</span>
+                  {isInWatchlist ? <Check className="w-4 h-4 text-[#00F060]" /> : <Plus className="w-4 h-4" />}
+                  <span>{isInWatchlist ? 'In My List' : 'Add to My List'}</span>
                 </button>
 
                 {movie.trailerUrl && (
                   <button
                     onClick={() => setShowTrailer(!showTrailer)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-700 font-semibold text-xs sm:text-sm transition"
+                    className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-700 font-semibold text-xs sm:text-sm transition"
                   >
                     <Film className="w-4 h-4" />
                     <span>Trailer</span>
@@ -165,18 +150,18 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
         </div>
 
         {/* Modal Navigation Tabs */}
-        <div className="flex items-center gap-6 px-6 border-b border-slate-800/80 bg-[#0d121f] sticky top-0 z-20">
-          {(['overview', 'cast', 'where', 'comments'] as const).map(tab => (
+        <div className="flex items-center gap-6 px-6 border-b border-slate-800/80 bg-[#0B1118] sticky top-0 z-20">
+          {(['overview', 'cast', 'comments'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`py-3.5 text-xs sm:text-sm font-bold capitalize transition border-b-2 relative ${
                 activeTab === tab
-                  ? 'text-emerald-400 border-emerald-400'
+                  ? 'text-[#00F060] border-[#00F060]'
                   : 'text-slate-400 border-transparent hover:text-slate-200'
               }`}
             >
-              {tab === 'where' ? 'Where to Watch' : tab}
+              {tab === 'comments' ? 'Reviews' : tab}
               {tab === 'comments' && comments.length > 0 && (
                 <span className="ml-1.5 px-1.5 py-0.2 rounded-full bg-slate-800 text-[10px] text-slate-300">
                   {comments.length}
@@ -199,7 +184,7 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-2">Overview</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Overview</h3>
                 <p className="text-slate-200 text-sm sm:text-base leading-relaxed">{movie.overview}</p>
               </div>
 
@@ -208,7 +193,7 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Genres</h3>
                 <div className="flex flex-wrap gap-2">
                   {movie.genres.map(g => (
-                    <span key={g} className="px-3 py-1 rounded-lg bg-slate-800/80 text-slate-300 text-xs font-medium border border-slate-700/60">
+                    <span key={g} className="px-3 py-1 rounded-xl bg-slate-900/90 text-slate-300 text-xs font-medium border border-slate-800">
                       {g}
                     </span>
                   ))}
@@ -244,11 +229,11 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
                       <div
                         key={m.id}
                         onClick={() => onSelectMovie(m)}
-                        className="cursor-pointer rounded-xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-emerald-500 transition group"
+                        className="cursor-pointer rounded-xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-[#00F060] transition group"
                       >
                         <img src={m.poster} alt={m.title} className="aspect-[2/3] object-cover w-full group-hover:scale-105 transition" />
                         <div className="p-1.5">
-                          <p className="text-[11px] font-bold text-slate-200 truncate group-hover:text-emerald-400">{m.title}</p>
+                          <p className="text-[11px] font-bold text-slate-200 truncate group-hover:text-[#00F060]">{m.title}</p>
                           <span className="text-[10px] text-slate-500">{m.year}</span>
                         </div>
                       </div>
@@ -262,17 +247,17 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
           {/* Cast Tab */}
           {activeTab === 'cast' && (
             <div className="space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Featured Cast</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Featured Cast</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {movie.cast.map(c => (
                   <div
                     key={c.id}
                     onClick={() => onSelectPerson && onSelectPerson(c.id)}
-                    className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 cursor-pointer transition"
+                    className="flex items-center gap-3 p-2.5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 cursor-pointer transition"
                   >
                     <img src={c.photo} alt={c.name} className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
                     <div className="overflow-hidden">
-                      <p className="font-bold text-xs text-white truncate hover:text-emerald-400">{c.name}</p>
+                      <p className="font-bold text-xs text-white truncate hover:text-[#00F060]">{c.name}</p>
                       <p className="text-[11px] text-slate-400 truncate">{c.character}</p>
                     </div>
                   </div>
@@ -281,63 +266,9 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
             </div>
           )}
 
-          {/* Where to Watch Tab */}
-          {activeTab === 'where' && (
-            <div className="space-y-6">
-              {isFree ? (
-                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <ShieldCheck className="w-6 h-6 text-emerald-400" />
-                    <div>
-                      <h4 className="font-bold text-white text-sm">Available Free on OTIVO Movies</h4>
-                      <p className="text-xs text-slate-300">Authorized high-definition streaming source available now.</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => onPlay(movie)}
-                    className="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition"
-                  >
-                    Play Free
-                  </button>
-                </div>
-              ) : (
-                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200">
-                  Currently unavailable for direct free streaming on OTIVO. Below are verified authorized legal streaming and rental providers:
-                </div>
-              )}
-
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Verified Authorized Providers</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {movie.whereToWatch.map(provider => (
-                    <a
-                      key={provider.id}
-                      href={provider.url || '#'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-500/50 transition group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center font-bold text-xs text-emerald-400">
-                          {provider.name[0]}
-                        </div>
-                        <div>
-                          <p className="font-bold text-xs text-white group-hover:text-emerald-400 transition">{provider.name}</p>
-                          <span className="text-[10px] text-slate-400 uppercase font-mono">{provider.type}</span>
-                        </div>
-                      </div>
-                      <ExternalLink className="w-4 h-4 text-slate-500 group-hover:text-emerald-400" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Comments & Rating Tab */}
           {activeTab === 'comments' && (
             <div className="space-y-6">
-              {/* Comment Form */}
               <form onSubmit={handleAddComment} className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">Leave a Review</h4>
                 <div className="flex items-center gap-2">
@@ -362,12 +293,12 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
                   onChange={e => setNewCommentText(e.target.value)}
                   placeholder="Share your thoughts about this title..."
                   rows={2}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-[#00F060]"
                 />
                 <button
                   type="submit"
                   disabled={submittingComment || !newCommentText.trim()}
-                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-[#00F060] hover:bg-[#16FF72] text-black font-bold text-xs transition disabled:opacity-50"
                 >
                   Post Review
                 </button>
@@ -379,7 +310,7 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
                   <p className="text-xs text-slate-500">No reviews yet. Be the first to share a review!</p>
                 ) : (
                   comments.map(c => (
-                    <div key={c.id} className="p-3.5 rounded-xl bg-slate-900/50 border border-slate-800/80 space-y-1">
+                    <div key={c.id} className="p-3.5 rounded-2xl bg-slate-900/50 border border-slate-800 space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-xs text-slate-200">{c.userName}</span>
                         {c.rating && (

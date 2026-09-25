@@ -41,7 +41,7 @@ export const MoviesPage: React.FC<MoviesPageProps> = ({
   const allGenres = ['All', 'Action', 'Sci-Fi', 'Fantasy', 'Horror', 'Romance', 'Comedy', 'Mystery', 'Drama', 'Classic'];
 
   return (
-    <div className="pt-24 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <div className="pt-20 pb-20 w-full px-4 sm:px-8 lg:px-12 2xl:px-16 space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-black text-white tracking-tight">Movie Catalog</h1>
@@ -49,7 +49,7 @@ export const MoviesPage: React.FC<MoviesPageProps> = ({
       </div>
 
       {/* Filter Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-[#0e1422] border border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-[#0B1118] border border-slate-800">
         <div className="flex flex-wrap items-center gap-2">
           {allGenres.map(g => (
             <button
@@ -57,8 +57,8 @@ export const MoviesPage: React.FC<MoviesPageProps> = ({
               onClick={() => setSelectedGenre(g)}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
                 selectedGenre === g
-                  ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
-                  : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
+                  ? 'bg-[#00F060] text-black shadow-lg shadow-[#00F060]/20'
+                  : 'bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
               {g}
@@ -66,21 +66,21 @@ export const MoviesPage: React.FC<MoviesPageProps> = ({
           ))}
         </div>
 
-        <div className="flex items-center gap-4 text-xs font-medium text-slate-300">
-          <label className="flex items-center gap-2 cursor-pointer">
+        <div className="flex items-center gap-4 text-xs">
+          <label className="flex items-center gap-2 text-slate-300 font-medium cursor-pointer">
             <input
               type="checkbox"
               checked={onlyFree}
               onChange={e => setOnlyFree(e.target.checked)}
-              className="rounded accent-emerald-500"
+              className="accent-[#00F060] rounded w-4 h-4 cursor-pointer"
             />
-            <span>Free Only</span>
+            <span>Free Stream Only</span>
           </label>
 
           <select
             value={sortBy}
             onChange={e => setSortBy(e.target.value)}
-            className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs font-medium text-white focus:outline-none focus:border-emerald-500"
+            className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs font-medium text-white focus:outline-none focus:border-[#00F060]"
           >
             <option value="popular">Most Popular</option>
             <option value="rating">Highest Rated</option>
@@ -89,8 +89,8 @@ export const MoviesPage: React.FC<MoviesPageProps> = ({
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+      {/* Responsive Grid Edge to Edge (6-8 cards per row on large displays) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4 sm:gap-6">
         {filtered.map(movie => (
           <MovieCard
             key={movie.id}
