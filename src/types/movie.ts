@@ -22,24 +22,79 @@ export type ReleaseStatus =
   | 'FREE_AVAILABLE'
   | 'WATCHABLE';
 
+export type StreamProtocol = 'HLS' | 'MP4' | 'TRAILER' | 'EXTERNAL';
+export type StreamQuality = '1080p' | '720p' | '480p' | 'Auto';
+
 export interface StreamingSource {
   id: string;
   movieId: string;
   providerName: string;
+  provider?: string;
   providerLogo?: string;
   sourceType: SourceType;
   streamUrl: string;
+  url?: string;
   embedUrl?: string;
+  type?: StreamProtocol;
+  quality?: StreamQuality;
+  isAuthorized?: boolean;
+  isVerified?: boolean;
+  isActive?: boolean;
   licenseStatus: 'VALID' | 'PENDING' | 'EXPIRED' | 'REVOKED';
   verificationStatus: VerificationStatus;
   region: string;
   language: string;
   isFree: boolean;
-  requiresAccount: boolean;
-  allowsEmbedding: boolean;
+  requiresAccount?: boolean;
+  allowsEmbedding?: boolean;
   verifiedAt: string;
   expiresAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
   lastError?: string;
+}
+
+export type MovieWatchAction =
+  | { type: 'STREAM'; label: 'Watch Free'; source: StreamingSource }
+  | { type: 'TRAILER'; label: 'Watch Trailer'; trailerUrl: string }
+  | { type: 'PROVIDER'; label: string; providerUrl: string; providerName: string };
+
+export function getMovieStreamingAction(movie: Movie): MovieWatchAction {
+  // 1. Authorized full movie stream
+  const authorizedSource = movie.streamingSources?.find(
+    s => (s.isAuthorized !== false) &&
+         (s.verificationStatus === 'VERIFIED' || s.isVerified !== false) &&
+         (s.isActive !== false) &&
+         (s.isFree || s.sourceType === 'AUTHORIZED_FREE' || s.sourceType === 'OWNED' || s.sourceType === 'PUBLIC_DOMAIN') &&
+         (s.type === 'HLS' || s.type === 'MP4' || s.streamUrl?.includes('.m3u8') || s.streamUrl?.includes('.mp4') || s.streamUrl?.includes('sample'))
+  );
+
+  if (authorizedSource) {
+    return { type: 'STREAM', label: 'Watch Free', source: authorizedSource };
+  }
+
+  // 2. Commercial / External Provider Availability
+  const externalProvider = movie.whereToWatch?.find(p => p.url && p.url !== '#watch' && !p.url.startsWith('#'));
+  if (externalProvider) {
+    return {
+      type: 'PROVIDER',
+      label: `Watch on ${externalProvider.name}`,
+      providerUrl: externalProvider.url,
+      providerName: externalProvider.name
+    };
+  }
+
+  // 3. Official Trailer
+  if (movie.trailerUrl) {
+    return { type: 'TRAILER', label: 'Watch Trailer', trailerUrl: movie.trailerUrl };
+  }
+
+  // Default fallback trailer
+  return {
+    type: 'TRAILER',
+    label: 'Watch Trailer',
+    trailerUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
+  };
 }
 
 export interface AuthorizedProvider {

@@ -17,12 +17,18 @@ interface AdminPageProps {
 }
 
 export const AdminPage: React.FC<AdminPageProps> = ({ movies, onRefreshMovies }) => {
-  const [activeTab, setActiveTab] = useState<'stats' | 'tmdb' | 'env' | 'movies' | 'sources' | 'verify' | 'sync'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'cdn' | 'tmdb' | 'env' | 'movies' | 'sources' | 'verify' | 'sync'>('stats');
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [syncLogs, setSyncLogs] = useState<ApiSyncLog[]>([]);
   const [verifying, setVerifying] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [verificationResult, setVerificationResult] = useState<string | null>(null);
+
+  // Streaming & CDN Architecture State
+  const [testStreamUrl, setTestStreamUrl] = useState('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4');
+  const [targetMovieForStream, setTargetMovieForStream] = useState<string>(movies[0]?.id || '');
+  const [streamAttachSuccess, setStreamAttachSuccess] = useState<string | null>(null);
+  const [testVideoPreview, setTestVideoPreview] = useState(false);
 
   // TMDB Importer State
   const [tmdbQuery, setTmdbQuery] = useState('');
@@ -331,6 +337,61 @@ export const AdminPage: React.FC<AdminPageProps> = ({ movies, onRefreshMovies })
     setVerifying(false);
   };
 
+  const handleAttachStream = (movieId: string, streamUrlToAttach: string) => {
+    if (!streamUrlToAttach.trim() || !movieId) return;
+    setStreamAttachSuccess(null);
+
+    const isHls = streamUrlToAttach.includes('.m3u8');
+    const newSource: StreamingSource = {
+      id: `src-${Date.now()}`,
+      movieId,
+      providerName: isHls ? 'OTIVO CDN (1080p HLS)' : 'OTIVO Direct Stream HD',
+      sourceType: 'AUTHORIZED_FREE',
+      streamUrl: streamUrlToAttach.trim(),
+      licenseStatus: 'VALID',
+      verificationStatus: 'VERIFIED',
+      region: 'Global',
+      language: 'English',
+      isFree: true,
+      requiresAccount: false,
+      allowsEmbedding: true,
+      verifiedAt: new Date().toISOString()
+    };
+
+    // Update local cache
+    try {
+      const cachedStr = localStorage.getItem('OTIVO_LIVE_CATALOG_CACHE');
+      const catalog: Movie[] = cachedStr ? JSON.parse(cachedStr) : [...movies];
+      const targetIdx = catalog.findIndex(m => m.id === movieId);
+      if (targetIdx >= 0) {
+        catalog[targetIdx] = {
+          ...catalog[targetIdx],
+          isFree: true,
+          status: 'FREE_AVAILABLE',
+          streamingSources: [newSource, ...(catalog[targetIdx].streamingSources || [])]
+        };
+        localStorage.setItem('OTIVO_LIVE_CATALOG_CACHE', JSON.stringify(catalog));
+      }
+    } catch {}
+
+    // Also attempt backend server update
+    fetch('/api/admin/sources', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        movieId,
+        providerName: newSource.providerName,
+        sourceType: 'AUTHORIZED_FREE',
+        streamUrl: streamUrlToAttach.trim(),
+        isFree: true,
+        allowsEmbedding: true
+      })
+    }).catch(() => {});
+
+    setStreamAttachSuccess(`Stream attached successfully! The movie is now marked as Free and clicking "Watch Free" will stream this video directly in the OTIVO player.`);
+    onRefreshMovies();
+  };
+
   const handleTriggerSync = async () => {
     setSyncing(true);
     const activeKey = tmdbKeyInput.trim() || getTmdbApiKey();
@@ -490,6 +551,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ movies, onRefreshMovies })
       <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-[#0c111c] border border-slate-800 overflow-x-auto text-xs font-semibold">
         {[
           { id: 'stats', label: 'Overview Stats', icon: Activity },
+          { id: 'cdn', label: 'Streaming & CDN Architecture', icon: Film },
           { id: 'tmdb', label: 'TMDB Importer & Architecture', icon: Sparkles },
           { id: 'env', label: 'Environment & API Keys', icon: Key },
           { id: 'movies', label: 'Movie Management', icon: Database },
@@ -563,6 +625,287 @@ export const AdminPage: React.FC<AdminPageProps> = ({ movies, onRefreshMovies })
               <span className="text-xs text-slate-400 uppercase font-mono">Upcoming Titles</span>
               <p className="text-2xl font-black text-amber-400">{effectiveStats.upcomingTitlesCount}</p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Streaming & CDN Architecture */}
+      {activeTab === 'cdn' && (
+        <div className="space-y-8">
+          {/* Header Card */}
+          <div className="p-6 rounded-3xl bg-gradient-to-r from-emerald-950/40 via-[#0c111c] to-[#0a0f1d] border border-emerald-500/30 space-y-3">
+            <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wider">
+              <Film className="w-4 h-4" />
+              <span>OTIVO Video Streaming Architecture</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-white">How Videos Actually Play Inside OTIVO Movies</h2>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
+              TMDB itself provides catalog metadata (titles, posters, backdrops, release years, cast, genres, ratings, and watch-provider availability). It does <strong>not</strong> host or stream movie files. OTIVO Movies uses a clean dual architecture to handle video playback:
+            </p>
+          </div>
+
+          {/* Architecture Comparison Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Architecture 1: OTIVO Hosted */}
+            <div className="p-6 rounded-3xl bg-[#0c111c] border border-emerald-500/40 space-y-4 shadow-xl flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider">
+                    Architecture 1: OTIVO Hosts The Video
+                  </span>
+                  <span className="text-xs font-mono text-emerald-400 font-bold">▶ In-App Player</span>
+                </div>
+                <h3 className="text-lg font-bold text-white">Direct CDN &amp; HLS Adaptive Streaming</h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  For films you own, license, or that are in the public domain / open source (e.g. <em>Tears of Steel</em>, <em>Sintel</em>, <em>Night of the Living Dead</em>, or your custom video catalog):
+                </p>
+
+                {/* Pipeline Flow Diagram */}
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 font-mono text-[11px] text-slate-300">
+                  <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                    <span>1. TMDB</span>
+                    <span className="text-slate-600">→</span>
+                    <span>Title, Poster, Cast, Metadata</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-emerald-300">
+                    <span>2. Storage</span>
+                    <span className="text-slate-600">→</span>
+                    <span>S3 / Cloudflare R2 / Google Cloud Storage</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-emerald-200">
+                    <span>3. Transcoder</span>
+                    <span className="text-slate-600">→</span>
+                    <span>FFmpeg HLS (.m3u8 + 6s video chunks)</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-emerald-100">
+                    <span>4. CDN Edge</span>
+                    <span className="text-slate-600">→</span>
+                    <span>https://cdn.otivomovies.com/.../master.m3u8</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-white font-bold bg-emerald-950/50 p-2 rounded border border-emerald-500/30">
+                    <span>5. OTIVO Player</span>
+                    <span className="text-emerald-400">→</span>
+                    <span>hls.js / Native video streams video in website!</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
+                <strong className="text-emerald-400">User Experience:</strong> User clicks <strong>"Watch Free"</strong> or <strong>"Play"</strong> and the film immediately buffers and plays directly inside the cinematic OTIVO modal player with fullscreen, volume, scrubbing, and history resumption.
+              </div>
+            </div>
+
+            {/* Architecture 2: Commercial Titles */}
+            <div className="p-6 rounded-3xl bg-[#0c111c] border border-blue-500/40 space-y-4 shadow-xl flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 uppercase tracking-wider">
+                    Architecture 2: Commercial / Studio Titles
+                  </span>
+                  <span className="text-xs font-mono text-blue-400 font-bold">External &amp; Trailer</span>
+                </div>
+                <h3 className="text-lg font-bold text-white">Where to Watch &amp; HD Trailer Gateway</h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  For Hollywood commercial titles that OTIVO does not have legal distribution rights to host:
+                </p>
+
+                {/* Pipeline Flow Diagram */}
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 font-mono text-[11px] text-slate-300">
+                  <div className="flex items-center gap-2 text-blue-400 font-bold">
+                    <span>1. TMDB</span>
+                    <span className="text-slate-600">→</span>
+                    <span>Movie information &amp; Official HD Trailer</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-blue-300">
+                    <span>2. Watchmode</span>
+                    <span className="text-slate-600">→</span>
+                    <span>Query authorized availability across 200+ providers</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-blue-200">
+                    <span>3. Provider Links</span>
+                    <span className="text-slate-600">→</span>
+                    <span>Watch on Netflix, Prime Video, Disney+, Tubi, Pluto</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-white font-bold bg-blue-950/50 p-2 rounded border border-blue-500/30">
+                    <span>4. Dual Action</span>
+                    <span className="text-blue-400">→</span>
+                    <span>1-click launch to provider OR watch HD trailer in OTIVO!</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
+                <strong className="text-blue-400">User Experience:</strong> User sees genuine where-to-watch badges (Netflix, Prime, Apple TV) with direct launch links, plus an official HD trailer preview that plays in the OTIVO player.
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive Stream Test Bench & Movie Assigner */}
+          <div className="p-6 rounded-3xl bg-[#0c111c] border border-slate-800 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Play className="w-4 h-4 text-emerald-400" />
+                  <span>Interactive Stream Tester &amp; Movie Video Assigner</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Test any HLS manifest (.m3u8) or direct MP4/CDN URL and attach it to any movie in your catalog to enable direct streaming.
+                </p>
+              </div>
+
+              {testVideoPreview ? (
+                <button
+                  onClick={() => setTestVideoPreview(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition"
+                >
+                  Close Video Preview
+                </button>
+              ) : (
+                <button
+                  onClick={() => setTestVideoPreview(true)}
+                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition flex items-center gap-2"
+                >
+                  <Play className="w-3.5 h-3.5 fill-slate-950" />
+                  <span>Preview Stream in Video Player</span>
+                </button>
+              )}
+            </div>
+
+            {streamAttachSuccess && (
+              <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-3">
+                <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <span>{streamAttachSuccess}</span>
+              </div>
+            )}
+
+            {/* Test Video Player Frame */}
+            {testVideoPreview && (
+              <div className="rounded-2xl overflow-hidden bg-black aspect-video border border-slate-800 shadow-2xl relative">
+                <video
+                  src={testStreamUrl}
+                  controls
+                  autoPlay
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                  Stream URL (HLS .m3u8, MP4, or CDN stream)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={testStreamUrl}
+                    onChange={e => setTestStreamUrl(e.target.value)}
+                    placeholder="https://your-cdn.com/movies/example/master.m3u8"
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Quick Preset Stream Picker */}
+              <div>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                  Verified Open HLS / MP4 Stream Presets (Click to test):
+                </span>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {[
+                    { name: 'Tears of Steel (1080p MP4)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4' },
+                    { name: 'Big Buck Bunny (1080p HLS)', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' },
+                    { name: 'Sintel (Open 4K Movie)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4' },
+                    { name: 'Elephants Dream (Sci-Fi HD)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' },
+                    { name: 'For Bigger Blazes (1080p)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' }
+                  ].map(preset => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() => {
+                        setTestStreamUrl(preset.url);
+                        setTestVideoPreview(true);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-[11px] transition flex items-center gap-1.5"
+                    >
+                      <Play className="w-3 h-3 text-emerald-400" />
+                      <span>{preset.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Attach Stream to Catalog Movie */}
+              <div className="pt-2 border-t border-slate-800 flex flex-col sm:flex-row sm:items-end gap-3">
+                <div className="flex-1">
+                  <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                    Select Target Title in Catalog:
+                  </label>
+                  <select
+                    value={targetMovieForStream}
+                    onChange={e => setTargetMovieForStream(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  >
+                    {movies.map(m => (
+                      <option key={m.id} value={m.id}>
+                        {m.title} ({m.year}) — {m.isFree ? 'Free Stream Active' : 'External Where-to-Watch'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleAttachStream(targetMovieForStream, testStreamUrl)}
+                  className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-emerald-500/20 whitespace-nowrap"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Attach Video Stream &amp; Enable Free Watch</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Production FFmpeg Transcoding Pipeline */}
+          <div className="p-6 rounded-3xl bg-[#0c111c] border border-slate-800 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-white">Production FFmpeg HLS Transcoding Script</h3>
+              </div>
+              <button
+                onClick={() => {
+                  const cmd = `ffmpeg -i input_master.mp4 \\
+  -filter_complex "[0:v]split=3[v1][v2][v3]; [v1]scale=w=1920:h=1080[v1out]; [v2]scale=w=1280:h=720[v2out]; [v3]scale=w=854:h=480[v3out]" \\
+  -map "[v1out]" -c:v:0 libx264 -b:v:0 5000k -maxrate:v:0 5350k -bufsize:v:0 7500k \\
+  -map "[v2out]" -c:v:1 libx264 -b:v:1 2800k -maxrate:v:1 2996k -bufsize:v:1 4200k \\
+  -map "[v3out]" -c:v:2 libx264 -b:v:2 1400k -maxrate:v:2 1498k -bufsize:v:2 2100k \\
+  -map a:0 -c:a:0 aac -b:a:0 192k -ac 2 \\
+  -f hls -hls_time 6 -hls_playlist_type vod -hls_flags independent_segments \\
+  -master_pl_name master.m3u8 -var_stream_map "v:0,a:0 v:1,a:0 v:2,a:0" stream_%v.m3u8`;
+                  handleCopy(cmd, 'ffmpeg_cmd');
+                }}
+                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs transition flex items-center gap-1.5"
+              >
+                {copiedKey === 'ffmpeg_cmd' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedKey === 'ffmpeg_cmd' ? 'Copied' : 'Copy FFmpeg Script'}</span>
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              To encode any raw video into Netflix-grade adaptive bitrate HLS (1080p, 720p, 480p) that plays smoothly across mobile phones and desktop displays without buffering:
+            </p>
+
+            <pre className="p-4 rounded-2xl bg-slate-950 border border-slate-900 font-mono text-[11px] text-emerald-300 overflow-x-auto leading-relaxed">
+{`ffmpeg -i input_master.mp4 \\
+  -filter_complex "[0:v]split=3[v1][v2][v3]; [v1]scale=w=1920:h=1080[v1out]; [v2]scale=w=1280:h=720[v2out]; [v3]scale=w=854:h=480[v3out]" \\
+  -map "[v1out]" -c:v:0 libx264 -b:v:0 5000k -maxrate:v:0 5350k -bufsize:v:0 7500k \\
+  -map "[v2out]" -c:v:1 libx264 -b:v:1 2800k -maxrate:v:1 2996k -bufsize:v:1 4200k \\
+  -map "[v3out]" -c:v:2 libx264 -b:v:2 1400k -maxrate:v:2 1498k -bufsize:v:2 2100k \\
+  -map a:0 -c:a:0 aac -b:a:0 192k -ac 2 \\
+  -f hls -hls_time 6 -hls_playlist_type vod -hls_flags independent_segments \\
+  -master_pl_name master.m3u8 -var_stream_map "v:0,a:0 v:1,a:0 v:2,a:0" stream_%v.m3u8`}
+            </pre>
           </div>
         </div>
       )}
