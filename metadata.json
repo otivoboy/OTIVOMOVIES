@@ -1,0 +1,6 @@
+{
+  "name": "OTIVO MOVIES",
+  "description": "Discover, explore, and watch authorized free movies, TV shows, and upcoming releases on OTIVO Movies.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
