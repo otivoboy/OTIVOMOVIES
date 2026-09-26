@@ -197,7 +197,7 @@ function transformTmdbItem(item: any, isUpcoming = false, isTrending = false, is
     genres: genreNames,
     languages: ['English'],
     countries: ['USA'],
-    trailerUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+    trailerUrl: '',
     status: isUpcoming ? 'UPCOMING' : 'RELEASED',
     isFree: !isUpcoming,
     isFeatured: isTrending,
@@ -210,23 +210,7 @@ function transformTmdbItem(item: any, isUpcoming = false, isTrending = false, is
     crew: [
       { id: `cr-${tmdbId}-1`, name: 'Acclaimed Director', job: 'Director', department: 'Directing' }
     ],
-    streamingSources: [
-      {
-        id: `src-tmdb-${tmdbId}`,
-        movieId: `otivo-tmdb-${tmdbId}`,
-        providerName: 'OTIVO Stream Hub',
-        sourceType: 'AUTHORIZED_FREE',
-        streamUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-        licenseStatus: 'VALID',
-        verificationStatus: 'VERIFIED',
-        region: 'Global',
-        language: 'English',
-        isFree: true,
-        requiresAccount: false,
-        allowsEmbedding: true,
-        verifiedAt: new Date().toISOString()
-      }
-    ],
+    streamingSources: [],
     whereToWatch: defaultProviders,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()

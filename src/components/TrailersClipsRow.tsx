@@ -19,34 +19,24 @@ export const TrailersClipsRow: React.FC<TrailersClipsRowProps> = ({
   movie,
   onPlayTrailer
 }) => {
+  const activeStreamUrl = movie?.streamingSources?.[0]?.streamUrl || movie?.trailerUrl || '';
+
+  if (!activeStreamUrl && !movie) return null;
+
   const defaultClips: TrailerClip[] = [
     {
       id: 'clip-1',
-      title: 'Official Stream Preview',
+      title: 'Official Master Stream',
       duration: '2:38',
-      thumbnail: movie?.backdrop || 'https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9JCnx7s520QIq.jpg',
-      videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'
+      thumbnail: movie?.backdrop || movie?.poster || 'https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9JCnx7s520QIq.jpg',
+      videoUrl: activeStreamUrl
     },
     {
       id: 'clip-2',
       title: 'Teaser Preview',
       duration: '1:45',
-      thumbnail: 'https://image.tmdb.org/t/p/w780/s16H6tpK2utvwDtzZ8Qy4qm5Emw.jpg',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4'
-    },
-    {
-      id: 'clip-3',
-      title: 'Behind The Scenes',
-      duration: '4:12',
-      thumbnail: 'https://image.tmdb.org/t/p/w780/8pjW1YrA232qv1ESR22UBm13P8G.jpg',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
-    },
-    {
-      id: 'clip-4',
-      title: 'Exclusive Direct Featurette',
-      duration: '3:05',
-      thumbnail: 'https://image.tmdb.org/t/p/w780/9l1eZi2A3R22452554.jpg',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4'
+      thumbnail: movie?.poster || 'https://image.tmdb.org/t/p/w780/s16H6tpK2utvwDtzZ8Qy4qm5Emw.jpg',
+      videoUrl: activeStreamUrl
     }
   ];
 
@@ -63,7 +53,7 @@ export const TrailersClipsRow: React.FC<TrailersClipsRowProps> = ({
         {defaultClips.map((clip) => (
           <button
             key={clip.id}
-            onClick={() => onPlayTrailer(clip.videoUrl, `${movie ? movie.title + ' — ' : ''}${clip.title}`)}
+            onClick={() => clip.videoUrl && onPlayTrailer(clip.videoUrl, `${movie ? movie.title + ' — ' : ''}${clip.title}`)}
             className="group text-left space-y-2 focus:outline-none"
           >
             <div className="relative aspect-video rounded-2xl overflow-hidden bg-[#0B1118] border border-slate-800/80 group-hover:border-[#00F060]/50 transition-all duration-300 shadow-xl">

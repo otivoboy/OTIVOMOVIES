@@ -158,7 +158,7 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
     providerName: source.providerName || 'OTIVO Edge CDN'
   } : null);
 
-  const streamUrl = activeStream?.url || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4';
+  const streamUrl = activeStream?.url || '';
 
   // 2. Attach HLS.js or Native HTML5 Video
   useEffect(() => {
@@ -327,6 +327,42 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
           <div className="space-y-1">
             <p className="text-sm font-bold text-white tracking-wide">Connecting to OTIVO Stream Adapter...</p>
             <p className="text-xs text-slate-400">Verifying HLS master manifest and edge CDN response</p>
+          </div>
+        </div>
+      )}
+
+      {/* No Stream Available Overlay */}
+      {!isResolving && !streamUrl && (
+        <div className="absolute inset-0 z-30 bg-[#05090D] flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto">
+          <img src={movie.poster} alt={movie.title} className="w-32 h-48 object-cover rounded-2xl border border-slate-800 shadow-2xl mb-4" />
+          <h3 className="text-xl font-black text-white">{movie.title}</h3>
+          <p className="text-xs text-slate-400 mt-1 font-mono">{movie.year} · {movie.type === 'tv' ? 'TV Series' : 'Movie'}</p>
+          <div className="mt-4 p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-left w-full">
+            <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <span>Direct Stream Source Pending</span>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              No direct HLS stream is currently active for this title on OTIVO CDN. Check Watchmode availability or select an authorized provider.
+            </p>
+          </div>
+          <div className="mt-6 flex flex-wrap gap-3 justify-center">
+            {movie.whereToWatch && movie.whereToWatch.length > 0 && (
+              <a
+                href={movie.whereToWatch[0].url || '#'}
+                target="_blank"
+                rel="noreferrer"
+                className="px-5 py-2.5 rounded-xl bg-[#00F060] text-black font-extrabold text-xs shadow-lg"
+              >
+                Watch on {movie.whereToWatch[0].name}
+              </a>
+            )}
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs hover:bg-slate-700"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

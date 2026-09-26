@@ -59,7 +59,7 @@ export type MovieWatchAction =
   | { type: 'TRAILER'; label: 'Watch Trailer'; trailerUrl: string }
   | { type: 'PROVIDER'; label: string; providerUrl: string; providerName: string };
 
-export function getMovieStreamingAction(movie: Movie): MovieWatchAction {
+export function getMovieStreamingAction(movie: Movie): MovieWatchAction | null {
   // 1. Authorized full movie stream
   const authorizedSource = movie.streamingSources?.find(
     s => (s.isAuthorized !== false) &&
@@ -89,12 +89,8 @@ export function getMovieStreamingAction(movie: Movie): MovieWatchAction {
     return { type: 'TRAILER', label: 'Watch Trailer', trailerUrl: movie.trailerUrl };
   }
 
-  // Default fallback trailer
-  return {
-    type: 'TRAILER',
-    label: 'Watch Trailer',
-    trailerUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
-  };
+  // Default fallback
+  return null;
 }
 
 export interface AuthorizedProvider {
