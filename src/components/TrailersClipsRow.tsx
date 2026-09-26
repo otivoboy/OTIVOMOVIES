@@ -22,14 +22,14 @@ export const TrailersClipsRow: React.FC<TrailersClipsRowProps> = ({
   const defaultClips: TrailerClip[] = [
     {
       id: 'clip-1',
-      title: 'Official Trailer',
+      title: 'Official Stream Preview',
       duration: '2:38',
       thumbnail: movie?.backdrop || 'https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9JCnx7s520QIq.jpg',
-      videoUrl: movie?.trailerUrl || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
+      videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'
     },
     {
       id: 'clip-2',
-      title: 'Teaser Trailer',
+      title: 'Teaser Preview',
       duration: '1:45',
       thumbnail: 'https://image.tmdb.org/t/p/w780/s16H6tpK2utvwDtzZ8Qy4qm5Emw.jpg',
       videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4'
@@ -43,7 +43,7 @@ export const TrailersClipsRow: React.FC<TrailersClipsRowProps> = ({
     },
     {
       id: 'clip-4',
-      title: 'Exclusive First Look',
+      title: 'Exclusive Direct Featurette',
       duration: '3:05',
       thumbnail: 'https://image.tmdb.org/t/p/w780/9l1eZi2A3R22452554.jpg',
       videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4'
@@ -72,7 +72,6 @@ export const TrailersClipsRow: React.FC<TrailersClipsRowProps> = ({
                 alt={clip.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
                 onError={(e) => {
-                  // Fallback thumbnail if image fails
                   (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600';
                 }}
               />

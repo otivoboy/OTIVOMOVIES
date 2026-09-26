@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Movie } from '../types/movie';
-import { Play, Plus, Check, Info, Star, ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-react';
+import { Play, Plus, Check, Info, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface HeroCarouselProps {
   featuredMovies: Movie[];
@@ -61,7 +61,7 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className="relative w-full h-[65vh] sm:h-[75vh] min-h-[480px] max-h-[750px] bg-[#05090D] overflow-hidden select-none"
+      className="relative w-full min-h-[500px] sm:min-h-[560px] lg:h-[70vh] lg:max-h-[720px] bg-[#05090D] overflow-hidden select-none"
     >
       {/* Hero Backdrop Image */}
       <div className="absolute inset-0 transition-opacity duration-1000 ease-in-out">
@@ -71,19 +71,19 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
           className="w-full h-full object-cover object-center scale-105 animate-subtle-zoom"
         />
         {/* Dark Cinematic Vignette Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#05090D] via-[#05090D]/80 to-transparent w-full lg:w-3/4 z-10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#05090D] via-[#05090D]/40 to-transparent h-full z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#05090D] via-[#05090D]/85 sm:via-[#05090D]/75 to-transparent w-full lg:w-3/4 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#05090D] via-[#05090D]/50 to-transparent h-full z-10" />
       </div>
 
-      {/* Hero Content Overlay (Edge to Edge) */}
-      <div className="relative z-20 w-full h-full px-4 sm:px-8 lg:px-12 2xl:px-16 flex items-end pb-12 sm:pb-16">
-        <div className="max-w-3xl space-y-4">
+      {/* Hero Content Overlay (Fixed Spacing for Mobile Viewport) */}
+      <div className="relative z-20 w-full h-full px-4 sm:px-8 lg:px-12 2xl:px-16 flex items-end pt-20 pb-16 sm:pb-20">
+        <div className="max-w-3xl space-y-3 sm:space-y-4">
           {/* Badge & Metadata Row */}
-          <div className="flex items-center flex-wrap gap-2.5 text-xs font-mono text-slate-300">
-            <span className="px-3 py-1 rounded-lg bg-[#00F060] text-black font-black uppercase tracking-widest text-[10px] shadow-lg shadow-[#00F060]/20">
+          <div className="flex items-center flex-wrap gap-2 text-xs font-mono text-slate-300">
+            <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg bg-[#00F060] text-black font-black uppercase tracking-widest text-[10px] shadow-lg shadow-[#00F060]/20">
               FEATURED
             </span>
-            <span className="flex items-center gap-1 text-amber-400 font-bold bg-black/60 px-2.5 py-1 rounded-lg border border-white/10">
+            <span className="flex items-center gap-1 text-amber-400 font-bold bg-black/60 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border border-white/10">
               <Star className="w-3.5 h-3.5 fill-amber-400" />
               <span>{currentMovie.rating.toFixed(1)}</span>
             </span>
@@ -96,7 +96,7 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
           </div>
 
           {/* Title */}
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight text-white drop-shadow-2xl leading-none">
+          <h1 className="text-2xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight text-white drop-shadow-2xl leading-tight sm:leading-none">
             {currentMovie.title}
           </h1>
 
@@ -116,21 +116,21 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3 pt-2">
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-2">
             <button
               onClick={() => onPlay(currentMovie)}
-              className="flex items-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-2xl bg-[#00F060] hover:bg-[#16FF72] text-black font-extrabold text-xs sm:text-sm shadow-xl shadow-[#00F060]/25 transition duration-200 transform hover:scale-105"
+              className="flex items-center gap-2 px-5 sm:px-8 py-3 sm:py-3.5 rounded-2xl bg-[#00F060] hover:bg-[#16FF72] text-black font-extrabold text-xs sm:text-sm shadow-xl shadow-[#00F060]/25 transition duration-200 transform active:scale-95 sm:hover:scale-105"
             >
-              <Play className="w-5 h-5 fill-black ml-0.5" />
+              <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-black ml-0.5" />
               <span>Watch Movie</span>
             </button>
 
             <button
               onClick={(e) => onToggleWatchlist(currentMovie.id, e)}
-              className={`flex items-center gap-2 px-5 py-3.5 rounded-2xl font-bold text-xs sm:text-sm transition ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl font-bold text-xs sm:text-sm transition ${
                 isInWatchlist
                   ? 'bg-[#00F060]/20 text-[#00F060] border border-[#00F060]/40'
-                  : 'bg-slate-900/80 hover:bg-slate-800 text-slate-200 border border-slate-700/80'
+                  : 'bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80'
               }`}
             >
               {isInWatchlist ? (
@@ -148,7 +148,7 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
 
             <button
               onClick={() => onSelect(currentMovie)}
-              className="flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-700/80 font-bold text-xs sm:text-sm transition"
+              className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-700/80 font-bold text-xs sm:text-sm transition"
             >
               <Info className="w-4 h-4" />
               <span>More Info</span>
@@ -175,7 +175,7 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
       </button>
 
       {/* Carousel Slide Indicators */}
-      <div className="absolute bottom-6 right-6 sm:right-12 z-30 flex items-center gap-2">
+      <div className="absolute bottom-4 sm:bottom-6 right-4 sm:right-12 z-30 flex items-center gap-2">
         {featuredMovies.map((m, idx) => (
           <button
             key={m.id}

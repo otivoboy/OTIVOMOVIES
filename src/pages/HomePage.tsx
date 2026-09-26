@@ -24,7 +24,6 @@ export const HomePage: React.FC<HomePageProps> = ({
   onToggleWatchlist
 }) => {
   const featured = movies.filter(m => m.isFeatured);
-  const freeMovies = movies.filter(m => m.isFree || m.streamingSources.some(s => s.isFree));
   const trending = movies.filter(m => m.isTrending);
   const popular = movies.filter(m => m.isPopular);
   const tvShows = movies.filter(m => m.type === 'tv');
@@ -72,7 +71,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           onToggleWatchlist={onToggleWatchlist}
         />
 
-        {/* 3. Featured Movie Detail Section (Spotlight Dune: Part Two) */}
+        {/* 3. Featured Movie Detail Section */}
         {spotlightMovie && (
           <MovieSpotlight
             movie={spotlightMovie}
@@ -104,18 +103,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         {/* 6. Continue Watching Row */}
         <ContinueWatchingRow historyItems={historyItems} onPlay={onPlayMovie} />
 
-        {/* 7. Free Content Section */}
-        <MovieRow
-          title="Free to Watch"
-          subtitle="Legally available full-length movies and shows on OTIVO"
-          movies={freeMovies}
-          watchlistIds={watchlistIds}
-          onSelect={onSelectMovie}
-          onPlay={onPlayMovie}
-          onToggleWatchlist={onToggleWatchlist}
-        />
-
-        {/* 8. Popular Blockbusters */}
+        {/* 7. Popular Blockbusters */}
         <MovieRow
           title="Popular Movies"
           subtitle="Top rated blockbusters and critical favorites"
@@ -126,7 +114,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           onToggleWatchlist={onToggleWatchlist}
         />
 
-        {/* 9. New & Upcoming Releases */}
+        {/* 8. New & Upcoming Releases */}
         <MovieRow
           title="New Releases"
           movies={newReleases}
@@ -145,7 +133,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           onToggleWatchlist={onToggleWatchlist}
         />
 
-        {/* 10. Genre Rows */}
+        {/* 9. Genre Rows */}
         <MovieRow
           title="Sci-Fi & Cyberpunk"
           movies={scifi}

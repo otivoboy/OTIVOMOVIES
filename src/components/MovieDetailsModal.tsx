@@ -176,7 +176,7 @@ export const MovieDetailsModal: React.FC<MovieDetailsModalProps> = ({
           {/* Trailer Embed Popup */}
           {showTrailer && movie.trailerUrl && (
             <div className="rounded-2xl overflow-hidden bg-black aspect-video border border-slate-800 shadow-2xl my-2">
-              <video src={movie.trailerUrl} controls autoPlay className="w-full h-full object-contain" />
+              <video src={movie.trailerUrl} controls className="w-full h-full object-contain" />
             </div>
           )}
 

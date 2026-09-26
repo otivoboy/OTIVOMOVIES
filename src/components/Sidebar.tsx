@@ -7,8 +7,6 @@ import {
   LayoutGrid,
   Plus,
   Clock,
-  Sparkles,
-  Settings,
   HelpCircle,
   Play,
   X
@@ -40,14 +38,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   const moreNavItems = [
-    { id: 'free', label: 'Free Content', icon: Sparkles },
-    { id: 'admin', label: 'Settings', icon: Settings },
     { id: 'help', label: 'Help & Support', icon: HelpCircle }
   ];
 
   const handleItemClick = (id: string) => {
     if (id === 'help') {
-      alert('OTIVO Movies Support: For questions regarding catalog streaming licenses, TMDB API configuration, or playback, contact support@otivomovies.com');
+      alert('OTIVO Movies Support: For questions regarding catalog streaming licenses or playback, contact support@otivomovies.com');
       return;
     }
     if (id === 'history') {

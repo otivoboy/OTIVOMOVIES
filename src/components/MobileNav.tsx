@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Search, Play, Heart, Film } from 'lucide-react';
+import { Home, Search, Film, Tv, Heart } from 'lucide-react';
 
 interface MobileNavProps {
   currentTab: string;
@@ -12,7 +12,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentTab, onNavigate, on
     { id: 'home', label: 'Home', icon: Home },
     { id: 'search', label: 'Search', icon: Search, isSearch: true },
     { id: 'movies', label: 'Movies', icon: Film },
-    { id: 'free', label: 'Watch Free', icon: Play },
+    { id: 'tv', label: 'TV Shows', icon: Tv },
     { id: 'watchlist', label: 'Watchlist', icon: Heart },
   ];
 

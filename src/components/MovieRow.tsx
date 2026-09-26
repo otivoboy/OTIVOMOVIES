@@ -38,11 +38,11 @@ export const MovieRow: React.FC<MovieRowProps> = ({
   if (!movies || movies.length === 0) return null;
 
   return (
-    <section className="relative my-8 sm:my-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <section className="relative my-6 sm:my-8 w-full">
       {/* Row Header */}
-      <div className="flex items-end justify-between mb-4">
+      <div className="flex items-end justify-between mb-3 px-1">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+          <h2 className="text-lg sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
             {title}
           </h2>
           {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
@@ -52,14 +52,14 @@ export const MovieRow: React.FC<MovieRowProps> = ({
         <div className="hidden sm:flex items-center gap-2">
           <button
             onClick={() => scroll('left')}
-            className="p-2 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-600 transition"
+            className="p-2 rounded-full bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-white hover:border-[#00F060] transition"
             aria-label="Scroll left"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             onClick={() => scroll('right')}
-            className="p-2 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-600 transition"
+            className="p-2 rounded-full bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-white hover:border-[#00F060] transition"
             aria-label="Scroll right"
           >
             <ChevronRight className="w-4 h-4" />
@@ -70,7 +70,7 @@ export const MovieRow: React.FC<MovieRowProps> = ({
       {/* Horizontal Scroll List */}
       <div
         ref={rowRef}
-        className="flex items-center gap-4 sm:gap-5 overflow-x-auto scrollbar-none py-2 px-1 scroll-smooth"
+        className="flex items-center gap-3 sm:gap-5 overflow-x-auto scrollbar-none py-2 px-1 scroll-smooth"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {movies.map(movie => (

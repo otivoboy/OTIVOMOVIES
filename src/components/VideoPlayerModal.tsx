@@ -16,8 +16,7 @@ import {
   CheckCircle2,
   ChevronDown,
   RotateCcw,
-  RotateCw,
-  Settings
+  RotateCw
 } from 'lucide-react';
 
 interface VideoPlayerModalProps {
@@ -28,15 +27,6 @@ interface VideoPlayerModalProps {
   initialPosition?: number;
   onClose: () => void;
   onUpdateHistory: (position: number, duration: number, completed: boolean) => void;
-}
-
-function getYouTubeEmbedUrl(url: string): string | null {
-  if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-  const match = url.match(regExp);
-  return match && match[2].length === 11
-    ? `https://www.youtube-nocookie.com/embed/${match[2]}?autoplay=1&rel=0&modestbranding=1`
-    : null;
 }
 
 export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
@@ -50,6 +40,7 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const playPromiseRef = useRef<Promise<void> | null>(null);
 
   // Resolver & Multi-source states
   const [resolvedSources, setResolvedSources] = useState<StreamResult[]>([]);
@@ -71,6 +62,55 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
   const [showControls, setShowControls] = useState(true);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const safePlay = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    try {
+      const p = video.play();
+      if (p !== undefined) {
+        playPromiseRef.current = p;
+        p.then(() => {
+          playPromiseRef.current = null;
+          setIsPlaying(true);
+        }).catch((err) => {
+          playPromiseRef.current = null;
+          if (err.name !== 'AbortError' && err.name !== 'NotAllowedError') {
+            console.warn('Playback error:', err);
+          }
+        });
+      } else {
+        setIsPlaying(true);
+      }
+    } catch {}
+  };
+
+  const safePause = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (playPromiseRef.current) {
+      playPromiseRef.current
+        .then(() => {
+          video.pause();
+          setIsPlaying(false);
+        })
+        .catch(() => {
+          video.pause();
+          setIsPlaying(false);
+        });
+    } else {
+      video.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const togglePlay = () => {
+    if (isPlaying) {
+      safePause();
+    } else {
+      safePlay();
+    }
+  };
 
   // 1. Run Stream Resolver on Mount
   useEffect(() => {
@@ -118,15 +158,14 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
     providerName: source.providerName || 'OTIVO Edge CDN'
   } : null);
 
-  const streamUrl = activeStream?.url || movie.trailerUrl || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4';
-  const ytEmbedUrl = activeStream?.type === 'embed' ? getYouTubeEmbedUrl(streamUrl) : null;
+  const streamUrl = activeStream?.url || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4';
 
-  // 2. Attach HLS.js or HTML5 Video
+  // 2. Attach HLS.js or Native HTML5 Video
   useEffect(() => {
     if (isResolving) return;
     setPlaybackError(null);
     const video = videoRef.current;
-    if (!video || ytEmbedUrl) return;
+    if (!video) return;
 
     let hls: Hls | null = null;
 
@@ -140,13 +179,13 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         if (initialPosition > 0) video.currentTime = initialPosition;
-        video.play().catch(() => {});
+        safePlay();
       });
 
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) {
           console.warn('HLS error:', data);
-          setPlaybackError('Stream buffering on current source. Attempting failover...');
+          setPlaybackError('Stream buffering on current source adapter. Attempting failover...');
           if (resolvedSources.length > activeSourceIndex + 1) {
             setActiveSourceIndex(prev => prev + 1);
           }
@@ -155,18 +194,18 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
     } else {
       video.src = streamUrl;
       if (initialPosition > 0) video.currentTime = initialPosition;
-      video.play().catch(() => {});
+      safePlay();
     }
 
     return () => {
       if (hls) hls.destroy();
     };
-  }, [streamUrl, ytEmbedUrl, isResolving, activeSourceIndex, resolvedSources.length, initialPosition]);
+  }, [streamUrl, isResolving, activeSourceIndex, resolvedSources.length, initialPosition]);
 
   // 3. Time, duration & history listener
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || ytEmbedUrl) return;
+    if (!video) return;
 
     const handleTimeUpdate = () => {
       setCurrentTime(video.currentTime);
@@ -179,7 +218,7 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
     };
 
     const handleError = () => {
-      setPlaybackError('Unable to play stream on this server. Switch source.');
+      setPlaybackError('Unable to play stream on this server. Switch source adapter.');
     };
 
     video.addEventListener('timeupdate', handleTimeUpdate);
@@ -201,19 +240,7 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
         onUpdateHistory(video.currentTime, video.duration || 0, video.ended);
       }
     };
-  }, [onUpdateHistory, ytEmbedUrl]);
-
-  const togglePlay = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (isPlaying) {
-      video.pause();
-      setIsPlaying(false);
-    } else {
-      video.play();
-      setIsPlaying(true);
-    }
-  };
+  }, [onUpdateHistory]);
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const video = videoRef.current;
@@ -298,45 +325,24 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
         <div className="absolute inset-0 z-40 bg-black flex flex-col items-center justify-center gap-4 text-center px-4">
           <div className="w-12 h-12 rounded-full border-4 border-[#00F060]/20 border-t-[#00F060] animate-spin" />
           <div className="space-y-1">
-            <p className="text-sm font-bold text-white tracking-wide">Connecting to OTIVO Movie Server...</p>
+            <p className="text-sm font-bold text-white tracking-wide">Connecting to OTIVO Stream Adapter...</p>
             <p className="text-xs text-slate-400">Verifying HLS master manifest and edge CDN response</p>
           </div>
         </div>
       )}
 
-      {/* Embedded Video vs Native HTML5/HLS Player */}
-      {activeStream?.type === 'embed' ? (
-        <div className="w-full h-full flex items-center justify-center">
-          {ytEmbedUrl ? (
-            <iframe
-              src={ytEmbedUrl}
-              title={movie.title}
-              className="w-full h-full border-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-            />
-          ) : (
-            <iframe
-              src={streamUrl}
-              title={movie.title}
-              className="w-full h-full border-0"
-              allowFullScreen
-            />
-          )}
-        </div>
-      ) : (
-        <video
-          ref={videoRef}
-          onClick={togglePlay}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          className="w-full h-full object-contain cursor-pointer"
-          playsInline
-        />
-      )}
+      {/* Direct Video Stream (HLS or MP4) */}
+      <video
+        ref={videoRef}
+        onClick={togglePlay}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        className="w-full h-full object-contain cursor-pointer"
+        playsInline
+      />
 
       {/* Central Big Play/Pause & Skip Buttons on Mobile (Touch Overlay) */}
-      {!ytEmbedUrl && showControls && !isResolving && (
+      {showControls && !isResolving && (
         <div className="absolute inset-0 flex items-center justify-center gap-8 pointer-events-none z-20">
           <button
             onClick={(e) => {
@@ -377,7 +383,7 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
         </div>
       )}
 
-      {/* Top Header Controls Overlay (Mobile & Desktop) */}
+      {/* Top Header Controls Overlay */}
       <div
         className={`absolute top-0 left-0 right-0 p-3 sm:p-6 bg-gradient-to-b from-black/95 via-black/60 to-transparent flex items-center justify-between transition-opacity duration-300 z-30 ${
           showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -485,7 +491,7 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
             <div className="absolute right-0 bottom-12 w-72 sm:w-80 rounded-3xl bg-[#0B1118]/95 border border-slate-800 p-3 shadow-2xl z-50 space-y-2 backdrop-blur-xl">
               <div className="flex items-center justify-between px-2 pb-2 border-b border-slate-800 text-xs">
                 <span className="font-black text-white uppercase tracking-wider text-[11px]">
-                  Movie Server Adapters
+                  Movie Stream Adapters
                 </span>
                 <span className="text-[10px] text-[#00F060] font-mono">
                   {resolvedSources.length} Verified
@@ -527,120 +533,118 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({
         </div>
       </div>
 
-      {/* Bottom Custom Controls Bar (Mobile & Desktop Fine View) */}
-      {activeStream?.type !== 'embed' && (
-        <div
-          className={`absolute bottom-0 left-0 right-0 p-3 sm:p-6 bg-gradient-to-t from-black/95 via-black/70 to-transparent transition-opacity duration-300 z-20 space-y-2 sm:space-y-3 ${
-            showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
-        >
-          {/* Progress Timeline */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <span className="text-[11px] sm:text-xs font-mono text-slate-300 min-w-[40px] text-right">
-              {formatTime(currentTime)}
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={duration || 100}
-              value={currentTime}
-              onChange={handleSeek}
-              className="w-full h-1.5 bg-slate-800 accent-[#00F060] rounded-lg cursor-pointer hover:h-2 transition-all"
-            />
-            <span className="text-[11px] sm:text-xs font-mono text-slate-300 min-w-[40px]">
-              {formatTime(duration)}
-            </span>
+      {/* Bottom Custom Controls Bar */}
+      <div
+        className={`absolute bottom-0 left-0 right-0 p-3 sm:p-6 bg-gradient-to-t from-black/95 via-black/70 to-transparent transition-opacity duration-300 z-20 space-y-2 sm:space-y-3 ${
+          showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        {/* Progress Timeline */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="text-[11px] sm:text-xs font-mono text-slate-300 min-w-[40px] text-right">
+            {formatTime(currentTime)}
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={duration || 100}
+            value={currentTime}
+            onChange={handleSeek}
+            className="w-full h-1.5 bg-slate-800 accent-[#00F060] rounded-lg cursor-pointer hover:h-2 transition-all"
+          />
+          <span className="text-[11px] sm:text-xs font-mono text-slate-300 min-w-[40px]">
+            {formatTime(duration)}
+          </span>
+        </div>
+
+        {/* Action Row */}
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                togglePlay();
+              }}
+              className="p-2.5 sm:p-3 rounded-full bg-[#00F060] text-black hover:bg-[#16FF72] transition shadow-lg"
+              title={isPlaying ? 'Pause' : 'Play'}
+            >
+              {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5 fill-black" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-black ml-0.5" />}
+            </button>
+
+            {/* Volume Slider */}
+            <div className="hidden sm:flex items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMute();
+                }}
+                className="text-slate-300 hover:text-white"
+              >
+                {isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+              </button>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={isMuted ? 0 : volume}
+                onChange={handleVolumeChange}
+                className="w-16 lg:w-20 h-1.5 bg-slate-800 accent-[#00F060] rounded cursor-pointer"
+              />
+            </div>
           </div>
 
-          {/* Action Row */}
-          <div className="flex items-center justify-between gap-2 sm:gap-4">
-            <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3 text-xs font-medium text-slate-300">
+            {/* Playback Speed Selector */}
+            <div className="relative">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  togglePlay();
+                  setShowSettingsMenu(!showSettingsMenu);
+                  setShowSourceMenu(false);
+                  setShowQualityMenu(false);
                 }}
-                className="p-2.5 sm:p-3 rounded-full bg-[#00F060] text-black hover:bg-[#16FF72] transition shadow-lg"
-                title={isPlaying ? 'Pause' : 'Play'}
+                className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 font-mono text-[11px] sm:text-xs text-white hover:border-[#00F060] transition"
               >
-                {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5 fill-black" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-black ml-0.5" />}
+                {playbackSpeed}x
               </button>
 
-              {/* Volume Slider (Hidden on small mobile screens to save space) */}
-              <div className="hidden sm:flex items-center gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleMute();
-                  }}
-                  className="text-slate-300 hover:text-white"
-                >
-                  {isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                </button>
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={isMuted ? 0 : volume}
-                  onChange={handleVolumeChange}
-                  className="w-16 lg:w-20 h-1.5 bg-slate-800 accent-[#00F060] rounded cursor-pointer"
-                />
-              </div>
+              {showSettingsMenu && (
+                <div className="absolute right-0 bottom-10 w-28 rounded-2xl bg-[#0B1118] border border-slate-800 p-2 shadow-2xl z-40 space-y-1 text-xs backdrop-blur-xl">
+                  {[0.75, 1, 1.25, 1.5, 2].map(speed => (
+                    <button
+                      key={speed}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSpeedChange(speed);
+                        setShowSettingsMenu(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl font-mono ${
+                        playbackSpeed === speed ? 'bg-[#00F060] text-black font-bold' : 'text-slate-300 hover:bg-slate-800'
+                      }`}
+                    >
+                      <span>{speed}x</span>
+                      {playbackSpeed === speed && <CheckCircle2 className="w-3.5 h-3.5" />}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3 text-xs font-medium text-slate-300">
-              {/* Playback Speed Selector */}
-              <div className="relative">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowSettingsMenu(!showSettingsMenu);
-                    setShowSourceMenu(false);
-                    setShowQualityMenu(false);
-                  }}
-                  className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 font-mono text-[11px] sm:text-xs text-white hover:border-[#00F060] transition"
-                >
-                  {playbackSpeed}x
-                </button>
-
-                {showSettingsMenu && (
-                  <div className="absolute right-0 bottom-10 w-28 rounded-2xl bg-[#0B1118] border border-slate-800 p-2 shadow-2xl z-40 space-y-1 text-xs backdrop-blur-xl">
-                    {[0.75, 1, 1.25, 1.5, 2].map(speed => (
-                      <button
-                        key={speed}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSpeedChange(speed);
-                          setShowSettingsMenu(false);
-                        }}
-                        className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl font-mono ${
-                          playbackSpeed === speed ? 'bg-[#00F060] text-black font-bold' : 'text-slate-300 hover:bg-slate-800'
-                        }`}
-                      >
-                        <span>{speed}x</span>
-                        {playbackSpeed === speed && <CheckCircle2 className="w-3.5 h-3.5" />}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Fullscreen Toggle */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleFullscreen();
-                }}
-                className="p-2 sm:p-2.5 rounded-xl bg-slate-900/90 text-slate-300 hover:text-white border border-slate-800"
-                title="Fullscreen"
-              >
-                {isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5" />}
-              </button>
-            </div>
+            {/* Fullscreen Toggle */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleFullscreen();
+              }}
+              className="p-2 sm:p-2.5 rounded-xl bg-slate-900/90 text-slate-300 hover:text-white border border-slate-800"
+              title="Fullscreen"
+            >
+              {isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5" />}
+            </button>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

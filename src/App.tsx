@@ -21,9 +21,7 @@ import { MoviesPage } from './pages/MoviesPage';
 import { TvShowsPage } from './pages/TvShowsPage';
 import { GenresPage } from './pages/GenresPage';
 import { UpcomingPage } from './pages/UpcomingPage';
-import { FreeToWatchPage } from './pages/FreeToWatchPage';
 import { WatchlistPage } from './pages/WatchlistPage';
-import { AdminPage } from './pages/AdminPage';
 import { PersonPage } from './pages/PersonPage';
 
 export default function App() {
@@ -109,7 +107,7 @@ export default function App() {
         onNavigate={handleNavigate}
       />
 
-      {/* Main Content Area Container (Padded left on desktop for fixed sidebar) */}
+      {/* Main Content Area Container */}
       <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
         {/* Sticky Top Header */}
         <TopHeader
@@ -178,16 +176,6 @@ export default function App() {
                 />
               )}
 
-              {currentTab === 'free' && (
-                <FreeToWatchPage
-                  movies={movies}
-                  watchlistIds={watchlistIds}
-                  onSelectMovie={setSelectedMovie}
-                  onPlayMovie={(movie) => setPlayingMovie({ movie })}
-                  onToggleWatchlist={handleToggleWatchlist}
-                />
-              )}
-
               {currentTab === 'watchlist' && (
                 <WatchlistPage
                   movies={movies}
@@ -207,10 +195,6 @@ export default function App() {
                   onPlayMovie={(movie) => setPlayingMovie({ movie })}
                   onToggleWatchlist={handleToggleWatchlist}
                 />
-              )}
-
-              {currentTab === 'admin' && (
-                <AdminPage movies={movies} onRefreshMovies={fetchMovies} />
               )}
             </>
           )}
